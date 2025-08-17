@@ -1,0 +1,44 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    image: qoffe-run-app
+    container_name: qoffe-run-app
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: qoffe-run-db
+    restart: always
+    environment:
+      POSTGRES_DB: qoffe_run
+      POSTGRES_USER: qoffeuser
+      POSTGRES_PASSWORD: qoffe2025
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: qoffe-run-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@qoffe.run
+      PGADMIN_DEFAULT_PASSWORD: qoffeadmin
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

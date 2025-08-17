@@ -1,0 +1,181 @@
+==================================
+       QOFFERUN – URL E ACCESSI
+==================================
+
+🚀 PROGETTO: Sistema per saltare la fila al bar
+📅 Data: 5 Aprile 2025
+
+==================================
+🔧 AMBIENTE DI SVILUPPO LOCALE
+==================================
+
+Tutti i servizi girano in locale su Docker e React.
+Assicurati di aver avviato:
+- Backend Docker
+- Ogni frontend con `npm start`
+
+==================================
+🌐 BACKEND LARAVEL (API)
+==================================
+URL: http://localhost:8000
+Descrizione: API REST per tutti i frontend e l'app mobile
+
+🔐 Endpoint login:
+  - POST /api/v1/login
+  - POST /api/v1/register-bar (per nuovi bar)
+
+📦 API Base: http://localhost:8000/api/v1
+
+Esempi:
+  - http://localhost:8000/api/v1/bars
+  - http://localhost:8000/api/v1/bar/orders
+  - http://localhost:8000/api/v1/admin/bars
+
+📝 Nota: Abilita CSRF con /sanctum/csrf-cookie prima del login
+
+
+==================================
+🐘 POSTGRESQL & PGADMIN
+==================================
+PostgreSQL:
+  - Host: localhost
+  - Porta: 5432
+  - Database: qoffe_run
+  - Utente: qoffeuser
+  - Password: qoffe2025
+
+pgAdmin:
+  - URL: http://localhost:8081
+  - Email: admin@qoffe.run
+  - Password: qoffeadmin
+
+📌 Connessione DB in pgAdmin:
+  - Host: db
+  - Port: 5432
+  - Maintenance DB: qoffe_run
+  - Username: qoffeuser
+  - Password: qoffe2025
+
+
+==================================
+🌐 FRONTEND 1: PORTAL (Registrazione Bar)
+==================================
+Cartella: frontend-portal
+Avvio: 
+  cd frontend-portal
+  npm start
+
+URL: http://localhost:3000
+Funzione: Pagina pubblica per i baristi che vogliono registrarsi
+
+Componenti:
+  - Form di registrazione bar
+  - Invio a /api/v1/register-bar
+
+
+==================================
+☕ FRONTEND 2: BAR CONTROL PANEL
+==================================
+Cartella: frontend-bar-panel
+Avvio:
+  cd frontend-bar-panel
+  npm start
+
+URL: http://localhost:3001
+Funzione: Pannello per baristi - gestione ordini in tempo reale
+
+Pagine:
+  - Login
+  - Lista ordini
+  - Bottone "Pronto"
+
+API usate:
+  - /api/v1/bar/orders
+  - /api/v1/bar/orders/{id}/ready
+
+
+==================================
+👮‍♂️ FRONTEND 3: ADMIN PANEL
+==================================
+Cartella: frontend-admin-panel
+Avvio:
+  cd frontend-admin-panel
+  npm start
+
+URL: http://localhost:3002
+Funzione: Amministrazione bar, utenti, stato, analitiche
+
+Pagine:
+  - Lista bar (attivi/in attesa)
+  - Dashboard
+  - Gestione account
+
+API usate:
+  - /api/v1/admin/bars
+  - /api/v1/admin/analytics
+
+
+==================================
+📱 APP MOBILE (Flutter)
+==================================
+API URL: http://10.0.2.2:8000 (Android Emulator)
+         http://localhost:8000 (iOS Simulatore / Fisico)
+
+Endpoint principali:
+  - /api/v1/login
+  - /api/v1/bars
+  - /api/v1/bars/{id}/menu
+  - /api/v1/orders (crea ordine)
+  - /api/v1/orders/{codice} (stato)
+
+Funzionalità:
+  - Scegli bar
+  - Ordina prodotti
+  - Pagamento
+  - Mostra codice a 4 cifre
+
+
+==================================
+🔐 CREDENZIALI DI DEFAULT
+==================================
+pgAdmin:
+  - Email: admin@qoffe.run
+  - Password: qoffeadmin
+
+Database PostgreSQL:
+  - User: qoffeuser
+  - Pass: qoffe2025
+  - DB: qoffe_run
+
+Admin Panel (esempio):
+  - Email: admin@qofferun.it
+  - Password: admin123
+
+Bar Panel (esempio):
+  - Email: barista@bar1.it
+  - Password: bar123
+
+📌 Cambiare le password in produzione!
+
+
+==================================
+📌 NOTE IMPORTANTI
+==================================
+1. Avvia prima il backend con Docker:
+   docker-compose up -d
+
+2. I frontend React devono abilitare:
+   - credentials: 'include'
+   - fetch('/sanctum/csrf-cookie') prima del login
+
+3. CORS è abilitato per:
+   - http://localhost:3000
+   - http://localhost:3001
+   - http://localhost:3002
+
+4. Per Flutter, usa 10.0.2.2:8000 su Android Emulator
+
+
+==================================
+✅ Tutto pronto per lo sviluppo!
+==================================

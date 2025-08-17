@@ -1,0 +1,75 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend/docker
+      dockerfile: Dockerfile
+    image: qoffe-run-backend
+    container_name: qoffe-run-backend
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend/src:/var/www/html
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: qoffe-run-db
+    restart: always
+    environment:
+      POSTGRES_DB: qoffe_run
+      POSTGRES_USER: qoffeuser
+      POSTGRES_PASSWORD: qoffe2025
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: qoffe-run-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@qoffe.run
+      PGADMIN_DEFAULT_PASSWORD: qoffeadmin
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+
+  portal:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.portal
+    container_name: qoffe-run-portal
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  bar-panel:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bar
+    container_name: qoffe-run-bar-panel
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+
+  admin-panel:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.admin
+    container_name: qoffe-run-admin-panel
+    ports:
+      - "3002:80"
+    depends_on:
+      - backend
+
+# ✅ VOLUMI — SINTASSI CORRETTA
+volumes:
+  pgdata: {}
