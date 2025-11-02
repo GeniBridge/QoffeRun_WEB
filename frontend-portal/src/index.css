@@ -1,3 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bs-body-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --bs-body-font-size: 1rem;
+  --bs-body-font-weight: 400;
+  --bs-body-line-height: 1.5;
+  --bs-body-color: #212529;
+  --bs-body-text-align: start;
+  --pos-dark: #2c3e50;
+  --pos-text: #495057;
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 0;
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--pos-dark);
+  font-family: var(--bs-body-font-family);
+}
+
+.fs-4 {
+  font-size: calc(1.275rem + .3vw) !important;
+}
+
+@media (min-width: 1200px) {
+  .fs-4 {
+    font-size: 1.5rem !important;
+  }
+}
+
+.fw-bold {
+  font-weight: 700 !important;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -10,4 +47,9 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.glass {
+  backdrop-filter: saturate(140%) blur(10px);
+  background: rgba(255, 255, 255, .7);
 }
