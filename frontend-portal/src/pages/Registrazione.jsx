@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import GoogleAddressAutocomplete from '../components/GoogleAddressAutocomplete'
 
 const Field = ({label, children, required}) => (
   <label className='block text-sm font-medium text-neutral-700'>
@@ -69,10 +70,20 @@ export default function Registrazione(){
   const dettagliBar = useForm({ 
     nome: '', 
     descrizione: '', 
-    indirizzo: '', 
-    citta: '', 
-    cap: '', 
-    provincia: '' 
+    // Indirizzo strutturato con Google Maps
+    indirizzo: {
+      formatted_address: '',
+      via: '',
+      numero_civico: '',
+      citta: '',
+      provincia: '',
+      regione: '',
+      cap: '',
+      paese: 'Italia',
+      lat: null,
+      lng: null,
+      place_name: ''
+    }
   })
   
   const mediaBar = useForm({ 
@@ -89,20 +100,78 @@ export default function Registrazione(){
     conferma: '' 
   })
 
-  const submit = () => {
+  const submit = async () => {
     const payload = {
-      dettagli: dettagliBar.data,
-      media: mediaBar.data,
-      gestore: gestore.data
+      // Dettagli del bar
+      nome: dettagliBar.data.nome,
+      descrizione: dettagliBar.data.descrizione,
+      
+      // Indirizzo strutturato
+      indirizzo_completo: dettagliBar.data.indirizzo.formatted_address,
+      via: dettagliBar.data.indirizzo.via,
+      numero_civico: dettagliBar.data.indirizzo.numero_civico,
+      citta: dettagliBar.data.indirizzo.citta,
+      provincia: dettagliBar.data.indirizzo.provincia,
+      regione: dettagliBar.data.indirizzo.regione,
+      cap: dettagliBar.data.indirizzo.cap,
+      paese: dettagliBar.data.indirizzo.paese,
+      latitudine: dettagliBar.data.indirizzo.lat,
+      longitudine: dettagliBar.data.indirizzo.lng,
+      
+      // Dati del gestore
+      gestore_nome: gestore.data.nome,
+      gestore_cognome: gestore.data.cognome,
+      gestore_email: gestore.data.email,
+      gestore_telefono: gestore.data.telefono,
+      gestore_password: gestore.data.password,
+      
+      // Media files (da convertire in FormData se necessario)
+      logo: mediaBar.data.logo,
+      cover: mediaBar.data.cover
     }
-    console.log('SUBMIT', payload)
-    nav('/successo', { state: { tipo: 'bar' } })
+
+    try {
+      // Invia i dati al backend Laravel
+      const formData = new FormData()
+      
+      // Aggiungi tutti i campi testo
+      Object.keys(payload).forEach(key => {
+        if (key !== 'logo' && key !== 'cover' && payload[key] !== null && payload[key] !== undefined) {
+          formData.append(key, payload[key])
+        }
+      })
+      
+      // Aggiungi i file se presenti
+      if (payload.logo) formData.append('logo', payload.logo)
+      if (payload.cover) formData.append('cover', payload.cover)
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bar/registrazione`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        console.log('Registrazione completata:', result)
+        nav('/successo', { state: { tipo: 'bar', data: result } })
+      } else {
+        console.error('Errore registrazione:', result)
+        alert('Errore durante la registrazione: ' + (result.message || 'Errore sconosciuto'))
+      }
+    } catch (error) {
+      console.error('Errore di rete:', error)
+      alert('Errore di connessione. Riprova più tardi.')
+    }
   }
 
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4))
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1))
 
-  const canProceedStep1 = dettagliBar.data.nome && dettagliBar.data.descrizione && dettagliBar.data.indirizzo
+  const canProceedStep1 = dettagliBar.data.nome && dettagliBar.data.descrizione && dettagliBar.data.indirizzo.formatted_address
   const canProceedStep2 = mediaBar.data.logo && mediaBar.data.cover
   const canProceedStep3 = gestore.data.nome && gestore.data.cognome && gestore.data.email && gestore.data.password && gestore.data.password === gestore.data.conferma
 
@@ -153,33 +222,59 @@ export default function Registrazione(){
                 </div>
 
                 <div className='md:col-span-2'>
-                  <Field label='Indirizzo dettagliato' required>
-                    <input 
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
-                      value={dettagliBar.data.indirizzo} 
-                      onChange={dettagliBar.set('indirizzo')} 
-                      placeholder='Via, numero civico, dettagli' 
+                  <Field label='Indirizzo completo' required>
+                    <GoogleAddressAutocomplete
+                      value={dettagliBar.data.indirizzo}
+                      onChange={(addressData) => {
+                        dettagliBar.setData(prev => ({
+                          ...prev,
+                          indirizzo: addressData
+                        }))
+                      }}
+                      placeholder="Cerca e seleziona l'indirizzo del bar..."
+                      required={true}
+                      className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent'
                     />
                   </Field>
                 </div>
 
-                <Field label='CAP'>
-                  <input 
-                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
-                    value={dettagliBar.data.cap} 
-                    onChange={dettagliBar.set('cap')} 
-                    placeholder='00100' 
-                  />
-                </Field>
-
-                <Field label='Provincia'>
-                  <input 
-                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
-                    value={dettagliBar.data.provincia} 
-                    onChange={dettagliBar.set('provincia')} 
-                    placeholder='RM' 
-                  />
-                </Field>
+                {/* Campi indirizzo automatici (read-only) */}
+                {dettagliBar.data.indirizzo.formatted_address && (
+                  <div className='md:col-span-2 space-y-4 p-4 bg-neutral-50 rounded-lg'>
+                    <h4 className='font-medium text-neutral-800 text-sm'>📍 Dettagli indirizzo selezionato:</h4>
+                    <div className='grid md:grid-cols-2 gap-4 text-sm'>
+                      <div>
+                        <span className='font-medium text-neutral-600'>Via/Piazza:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.via || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <span className='font-medium text-neutral-600'>Numero civico:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.numero_civico || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <span className='font-medium text-neutral-600'>Città:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.citta}</div>
+                      </div>
+                      <div>
+                        <span className='font-medium text-neutral-600'>CAP:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.cap}</div>
+                      </div>
+                      <div>
+                        <span className='font-medium text-neutral-600'>Provincia:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.provincia}</div>
+                      </div>
+                      <div>
+                        <span className='font-medium text-neutral-600'>Regione:</span>
+                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.regione}</div>
+                      </div>
+                    </div>
+                    {dettagliBar.data.indirizzo.lat && dettagliBar.data.indirizzo.lng && (
+                      <div className='text-xs text-neutral-500'>
+                        📌 Coordinate: {dettagliBar.data.indirizzo.lat.toFixed(6)}, {dettagliBar.data.indirizzo.lng.toFixed(6)}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -289,7 +384,25 @@ export default function Registrazione(){
                   <h3 className='font-semibold text-neutral-900 mb-2'>Dettagli del Bar</h3>
                   <p><strong>Nome:</strong> {dettagliBar.data.nome}</p>
                   <p><strong>Descrizione:</strong> {dettagliBar.data.descrizione}</p>
-                  <p><strong>Indirizzo:</strong> {dettagliBar.data.indirizzo}, {dettagliBar.data.citta} {dettagliBar.data.cap}</p>
+                  
+                  <div className='mt-3'>
+                    <strong>Indirizzo completo:</strong>
+                    <div className='ml-4 mt-1 text-sm space-y-1'>
+                      <p>{dettagliBar.data.indirizzo.formatted_address}</p>
+                      {dettagliBar.data.indirizzo.via && (
+                        <div className='text-neutral-600'>
+                          <span>📍 {dettagliBar.data.indirizzo.via} {dettagliBar.data.indirizzo.numero_civico}</span><br/>
+                          <span>{dettagliBar.data.indirizzo.cap} {dettagliBar.data.indirizzo.citta} ({dettagliBar.data.indirizzo.provincia})</span><br/>
+                          <span>{dettagliBar.data.indirizzo.regione}, {dettagliBar.data.indirizzo.paese}</span>
+                          {dettagliBar.data.indirizzo.lat && (
+                            <div className='text-xs mt-1 text-neutral-500'>
+                              Coordinate: {dettagliBar.data.indirizzo.lat.toFixed(6)}, {dettagliBar.data.indirizzo.lng.toFixed(6)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className='bg-neutral-50 rounded-lg p-4'>

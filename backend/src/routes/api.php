@@ -7,11 +7,16 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\BaristaController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\BarRegistrationController;
 
 // Public Routes
 Route::prefix('v1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    
+    // Bar Registration (public endpoint)
+    Route::post('/bar/registrazione', [BarRegistrationController::class, 'register']);
+    Route::post('/bar/status', [BarRegistrationController::class, 'getRegistrationStatus']);
 });
 
 // Protected Routes

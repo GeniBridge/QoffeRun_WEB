@@ -15,33 +15,45 @@ class Bar extends Model
         // Legacy combined address (kept for compat)
         'address',
 
-        // New flat address fields
-        'address_street',
-        'address_number',
-        'address_city',
-        'address_province',
-        'address_region',
-        'address_postal_code',
+        // New structured address fields (updated names)
+        'indirizzo_completo',
+        'via',
+        'numero_civico', 
+        'citta',
+        'provincia',
+        'regione',
+        'cap',
+        'paese',
+        'place_name',
 
-        // Geo
+        // Geo coordinates
         'latitude',
         'longitude',
 
-        // Details
+        // Bar details
         'description',
         'weekdays_open',
         'weekdays_close',
         'weekend_open',
         'weekend_close',
 
-        // Media
+        // Media files
         'logo',
         'photo',
         'cover_image',
 
-        // System
+        // Manager/Owner details
+        'gestore_nome',
+        'gestore_cognome',
+        'gestore_email',
+        'gestore_telefono',
+
+        // System fields
         'qr_code',
         'status',
+        'registration_status',
+        'registration_date',
+        'registration_notes',
     ];
 
     /**
@@ -49,10 +61,11 @@ class Bar extends Model
      */
     protected $appends = [
         'logo_url',
-        'photo_url',
+        'photo_url', 
         'cover_image_url',
         'address_structured',
         'full_address',
+        'gestore_completo',
     ];
 
     /* ---------------------------
@@ -75,34 +88,42 @@ class Bar extends Model
     }
 
     /**
-     * Structured address assembled from flat columns.
-     * Falls back to nulls if fields are missing.
+     * Structured address assembled from new Italian address fields.
      */
     public function getAddressStructuredAttribute(): array
     {
         return [
-            'street'     => $this->address_street,
-            'number'     => $this->address_number,
-            'city'       => $this->address_city,
-            'province'   => $this->address_province,
-            'region'     => $this->address_region,
-            'postalCode' => $this->address_postal_code,
+            'formatted_address' => $this->indirizzo_completo,
+            'via'              => $this->via,
+            'numero_civico'    => $this->numero_civico,
+            'citta'            => $this->citta,
+            'provincia'        => $this->provincia,
+            'regione'          => $this->regione,
+            'cap'              => $this->cap,
+            'paese'            => $this->paese,
+            'place_name'       => $this->place_name,
+            'lat'              => $this->latitude,
+            'lng'              => $this->longitude,
         ];
     }
 
     /**
-     * Human-readable full address.
-     * Uses flat fields if present; otherwise returns legacy 'address'.
+     * Human-readable full address using Italian format.
      */
     public function getFullAddressAttribute(): ?string
     {
-        // Prefer the new fields when at least street & city exist
-        if ($this->address_street || $this->address_city) {
+        // Use the complete Google Maps formatted address if available
+        if ($this->indirizzo_completo) {
+            return $this->indirizzo_completo;
+        }
+
+        // Otherwise construct from individual fields
+        if ($this->via || $this->citta) {
             $parts = array_filter([
-                trim(($this->address_street ?? '') . ' ' . ($this->address_number ?? '')),
-                trim(($this->address_city ?? '') . ($this->address_province ? " ({$this->address_province})" : '')),
-                $this->address_region,
-                $this->address_postal_code,
+                trim(($this->via ?? '') . ' ' . ($this->numero_civico ?? '')),
+                trim(($this->cap ?? '') . ' ' . ($this->citta ?? '') . ($this->provincia ? " ({$this->provincia})" : '')),
+                $this->regione,
+                $this->paese,
             ]);
 
             return count($parts) ? implode(', ', $parts) : null;
@@ -110,6 +131,17 @@ class Bar extends Model
 
         // Fallback to legacy combined text column
         return $this->address ?: null;
+    }
+
+    /**
+     * Get complete manager/owner information.
+     */
+    public function getGestoreCompletoAttribute(): ?string
+    {
+        if ($this->gestore_nome || $this->gestore_cognome) {
+            return trim($this->gestore_nome . ' ' . $this->gestore_cognome);
+        }
+        return null;
     }
 
     /* -------------
