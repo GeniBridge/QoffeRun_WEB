@@ -167,4 +167,9 @@ class Bar extends Model
     {
         return $this->hasMany(Payout::class);
     }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(BarSetting::class);
+    }
 }
