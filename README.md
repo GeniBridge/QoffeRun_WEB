@@ -1,6 +1,5 @@
 # 🚀 QoffeRun - Complete Project Setup & Run Guide
 
-![QoffeRun Logo](frontend-portal/public/logo.png)
 
 **QoffeRun** is a comprehensive Point of Sale (POS) system for bars and restaurants, featuring a modern web-based architecture with multiple frontend panels and a robust Laravel backend.
 
