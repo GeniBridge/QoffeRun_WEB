@@ -2,7 +2,7 @@ import React from 'react'
 import appPreview from '/app-preview.png'
 import pos1 from '/s1.png'
 import pos2 from '/s2.png'
-import logo from '/logo.png'
+import Logo from '../components/Logo'
 
 export default function Home(){
   return (
@@ -27,7 +27,7 @@ export default function Home(){
         <div className='relative'>
           <img src={appPreview} alt='Anteprima app QoffeRun' className='mx-auto max-h-[640px] drop-shadow-2xl'/>
           <div className='absolute -bottom-4 left-1/2 -translate-x-1/2 glass rounded-2xl shadow-soft px-4 py-3 flex items-center gap-3'>
-            <img src={logo} className='h-8' alt='Logo'/>
+            <Logo width="32" height="32" className='h-8'/>
             <p className='text-sm font-medium'>Mario Rossi • Piazza Navona, Roma</p>
           </div>
         </div>
@@ -112,13 +112,104 @@ export default function Home(){
     <section id='bar' className='py-16 bg-white'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center gap-3'>
-          <img src={logo} className='h-8' alt='logo'/>
+          <Logo width="32" height="32" className='h-8'/>
           <h2 className='text-3xl fw-bold' style={{fontFamily: 'var(--bs-body-font-family)'}}>QoffeRun per i bar</h2>
         </div>
         <p className='mt-2 text-neutral-700'>Gestione completa: prodotti, ordini, pagamenti e scontrini elettronici via <strong>Fattura per Tutti</strong>.</p>
         <div className='mt-8 grid lg:grid-cols-2 gap-6'>
           <img src={pos1} alt='Dashboard – lista ordini' className='rounded-2xl shadow-soft border'/>
           <img src={pos2} alt='Dashboard – ordine selezionato' className='rounded-2xl shadow-soft border'/>
+        </div>
+        
+        <div className='mt-12 text-center'>
+          <button 
+            onClick={() => window.location.href = '/registrazione'}
+            className='inline-flex items-center px-6 py-3 bg-qorange-600 text-white rounded-lg hover:bg-qorange-700 font-medium mr-4'
+          >
+            Registra il tuo bar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id='chains' className='py-16 bg-gradient-to-br from-neutral-900 to-neutral-800 text-white'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='text-center mb-12'>
+          <h2 className='text-3xl fw-bold mb-4' style={{fontFamily: 'var(--bs-body-font-family)'}}>
+            🏢 QoffeRun per le Catene
+          </h2>
+          <p className='text-xl text-neutral-300'>
+            Gestisci multiple filiali con un unico dashboard centralizzato
+          </p>
+        </div>
+        
+        <div className='grid lg:grid-cols-2 gap-12 items-center'>
+          <div>
+            <h3 className='text-2xl font-semibold mb-6'>Controllo Centralizzato</h3>
+            <ul className='space-y-4'>
+              <li className='flex items-start gap-3'>
+                <span className='w-2 h-2 bg-qorange-400 rounded-full mt-2 flex-shrink-0'></span>
+                <div>
+                  <strong className='text-qorange-400'>Dashboard Unificata:</strong> Visualizza le performance di tutte le tue filiali in un colpo d'occhio
+                </div>
+              </li>
+              <li className='flex items-start gap-3'>
+                <span className='w-2 h-2 bg-qorange-400 rounded-full mt-2 flex-shrink-0'></span>
+                <div>
+                  <strong className='text-qorange-400'>Gestione Multi-Filiale:</strong> Aggiungi, modifica e gestisci tutte le tue location da un unico posto
+                </div>
+              </li>
+              <li className='flex items-start gap-3'>
+                <span className='w-2 h-2 bg-qorange-400 rounded-full mt-2 flex-shrink-0'></span>
+                <div>
+                  <strong className='text-qorange-400'>Report Avanzati:</strong> Analytics dettagliate per ogni filiale e confronti di performance
+                </div>
+              </li>
+              <li className='flex items-start gap-3'>
+                <span className='w-2 h-2 bg-qorange-400 rounded-full mt-2 flex-shrink-0'></span>
+                <div>
+                  <strong className='text-qorange-400'>Gestione Staff:</strong> Assegna manager alle filiali e gestisci i permessi centralizzati
+                </div>
+              </li>
+            </ul>
+            
+            <div className='mt-8 flex flex-col sm:flex-row gap-4'>
+              <button 
+                onClick={() => window.location.href = '/register-chain-owner'}
+                className='inline-flex items-center justify-center px-6 py-3 bg-qorange-600 text-white rounded-lg hover:bg-qorange-700 font-medium'
+              >
+                🚀 Registra la tua Catena
+              </button>
+              <button 
+                onClick={() => window.location.href = '/login-chain-owner'}
+                className='inline-flex items-center justify-center px-6 py-3 border border-qorange-400 text-qorange-400 rounded-lg hover:bg-qorange-400 hover:text-white font-medium'
+              >
+                Accedi al Dashboard
+              </button>
+            </div>
+          </div>
+          
+          <div className='bg-gradient-to-br from-qorange-600/20 to-qorange-800/20 rounded-2xl p-8 border border-qorange-600/30'>
+            <h4 className='text-xl font-semibold mb-6 text-qorange-400'>Vantaggi per le Catene:</h4>
+            <div className='space-y-4'>
+              <div className='flex justify-between items-center py-2 border-b border-neutral-700'>
+                <span>Visibilità completa</span>
+                <span className='text-qorange-400 font-semibold'>✅ Multi-filiale</span>
+              </div>
+              <div className='flex justify-between items-center py-2 border-b border-neutral-700'>
+                <span>Gestione centralizzata</span>
+                <span className='text-qorange-400 font-semibold'>✅ Dashboard unico</span>
+              </div>
+              <div className='flex justify-between items-center py-2 border-b border-neutral-700'>
+                <span>Controlli avanzati</span>
+                <span className='text-qorange-400 font-semibold'>✅ Ruoli & Permessi</span>
+              </div>
+              <div className='flex justify-between items-center py-2'>
+                <span>Commissioni scalabili</span>
+                <span className='text-qorange-400 font-semibold'>✅ Fino al 10%</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

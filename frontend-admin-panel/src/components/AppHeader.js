@@ -27,6 +27,7 @@ import {
 
 import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
+import Logo from './Logo'
 
 const AppHeader = () => {
   const headerRef = useRef()

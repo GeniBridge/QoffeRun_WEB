@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect } from 'react'
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import React, { Suspense, useEffect, useState } from 'react'
+import { HashRouter, Route, Routes, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 import { CSpinner, useColorModes } from '@coreui/react'
@@ -7,6 +7,9 @@ import './scss/style.scss'
 
 // We use those styles to show code examples, you should remove them in your application.
 import './scss/examples.scss'
+
+// Services
+import adminAuthService from './services/adminAuthService'
 
 // Containers
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
@@ -16,6 +19,32 @@ const Login = React.lazy(() => import('./views/pages/login/Login'))
 const Register = React.lazy(() => import('./views/pages/register/Register'))
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'))
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const authenticated = adminAuthService.isAuthenticated()
+      setIsAuthenticated(authenticated)
+      setIsLoading(false)
+    }
+    
+    checkAuth()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="pt-3 text-center">
+        <CSpinner color="primary" variant="grow" />
+      </div>
+    )
+  }
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />
+}
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
@@ -49,7 +78,11 @@ const App = () => {
           <Route exact path="/register" name="Register Page" element={<Register />} />
           <Route exact path="/404" name="Page 404" element={<Page404 />} />
           <Route exact path="/500" name="Page 500" element={<Page500 />} />
-          <Route path="*" name="Home" element={<DefaultLayout />} />
+          <Route path="*" name="Home" element={
+            <ProtectedRoute>
+              <DefaultLayout />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Suspense>
     </HashRouter>

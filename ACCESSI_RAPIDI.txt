@@ -1,0 +1,34 @@
+# 🔑 QoffeRun - Accessi Rapidi
+
+## 🏪 BAR PANEL
+**URL**: https://bar.qofferun.com
+**Email**: luca@barista.it
+**Password**: admin123
+**Ruolo**: barista
+
+## 🛡️ ADMIN PANEL  
+**URL**: https://controllo.qofferun.com
+**Email**: admin@qofferun.com
+**Password**: admin123
+**Ruolo**: admin
+
+## 📡 API BACKEND
+**URL**: https://api.qofferun.com
+**Endpoint Bar**: /api/bar-panel/*
+**Endpoint Admin**: /api/admin-panel/*
+
+## 📧 EMAIL TEST
+**Destinazione**: shikosoft.italia@gmail.com
+**From**: noreply@qofferun.com
+
+## 🧪 TEST RAPIDO
+```bash
+# Test Bar Login
+curl -X POST https://api.qofferun.com/api/bar-panel/login -H "Content-Type: application/json" -d '{"email":"luca@barista.it","password":"admin123"}'
+
+# Test Admin Login  
+curl -X POST https://api.qofferun.com/api/admin-panel/login -H "Content-Type: application/json" -d '{"email":"admin@qofferun.com","password":"admin123"}'
+```
+
+---
+**Aggiornato**: 6 Nov 2025

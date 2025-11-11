@@ -9,6 +9,8 @@ import {
   cilCreditCard,
   cilChartLine,
   cilSettings,
+  cilImage,
+  cilPeople,
 } from '@coreui/icons'
 
 import { CNavItem } from '@coreui/react'
@@ -34,6 +36,12 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: '👥 Staff',
+    to: '/staff',
+    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
     name: '💳 Transazioni',
     to: '/transazioni',
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,
@@ -49,6 +57,12 @@ const _nav = [
     name: '⚙️ Impostazioni',
     to: '/impostazioni',
     icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: '🎨 Logo',
+    to: '/settings/logo',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
   },
 ]
 

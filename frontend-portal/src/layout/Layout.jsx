@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Outlet, Link, NavLink, useLocation } from 'react-router-dom'
-import logo from '/logo.png'
+import Logo from '../components/Logo'
 
 const ContactModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -159,15 +159,14 @@ export default function Layout(){
       <header className='sticky top-0 z-40 bg-white/90 border-b border-neutral-200/60 backdrop-blur'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between'>
           <Link to='/' className='flex items-center gap-3'>
-            <img src={logo} alt='QoffeRun' className='h-9 w-auto'/>
-            <span className='brand text-2xl tracking-tight fs-4 fw-bold'>QoffeRun</span>
+            <Logo width="180" height="60" className='h-12 w-auto'/>
           </Link>
-          <nav className='hidden md:flex items-center gap-8 text-sm font-medium'>
+          <nav className='hidden md:flex items-center gap-6 text-sm font-medium'>
             <Link to='/#funziona' className={link} onClick={() => handleHashClick('funziona')}>Come funziona</Link>
             <Link to='/#clienti' className={link} onClick={() => handleHashClick('clienti')}>Per i clienti</Link>
             <Link to='/#bar' className={link} onClick={() => handleHashClick('bar')}>Per i bar</Link>
+            <Link to='/#chains' className={link} onClick={() => handleHashClick('chains')}>Per le catene</Link>
             <Link to='/#schermate' className={link} onClick={() => handleHashClick('schermate')}>Schermate</Link>
-            <Link to='/#faq' className={link} onClick={() => handleHashClick('faq')}>FAQ</Link>
             <NavLink to='/registrazione' className={({isActive})=> isActive?active:link }>Registrazione</NavLink>
           </nav>
           <div className='hidden md:flex items-center gap-3'>
@@ -183,8 +182,8 @@ export default function Layout(){
               <Link to='/#funziona' className='block' onClick={() => {setOpen(false); handleHashClick('funziona')}}>Come funziona</Link>
               <Link to='/#clienti' className='block' onClick={() => {setOpen(false); handleHashClick('clienti')}}>Per i clienti</Link>
               <Link to='/#bar' className='block' onClick={() => {setOpen(false); handleHashClick('bar')}}>Per i bar</Link>
+              <Link to='/#chains' className='block' onClick={() => {setOpen(false); handleHashClick('chains')}}>Per le catene</Link>
               <Link to='/#schermate' className='block' onClick={() => {setOpen(false); handleHashClick('schermate')}}>Schermate</Link>
-              <Link to='/#faq' className='block' onClick={() => {setOpen(false); handleHashClick('faq')}}>FAQ</Link>
               <NavLink to='/registrazione' className='block' onClick={()=>setOpen(false)}>Registrazione</NavLink>
               <button onClick={() => {setOpen(false); setContactModalOpen(true)}} className='block text-left w-full'>Contattaci</button>
             </nav>
@@ -196,8 +195,7 @@ export default function Layout(){
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid md:grid-cols-3 gap-8'>
           <div>
             <div className='flex items-center gap-3'>
-              <img src={logo} className='h-9' alt='logo'/>
-              <span className='brand text-xl fw-bold'>QoffeRun</span>
+              <Logo width="160" height="50" className='h-10'/>
             </div>
             <p className='mt-3 text-neutral-400'>Ordina, paga, ritira. Semplifica la pausa caff8 e digitalizza il tuo bar.</p>
           </div>

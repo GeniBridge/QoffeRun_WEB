@@ -220,4 +220,19 @@ class SystemSettingsController extends Controller
             'data' => $settings
         ]);
     }
+
+    /**
+     * Ottieni configurazione Google Maps pubblica per il frontend
+     */
+    public function googleMapsConfig(): JsonResponse
+    {
+        $apiKey = SystemSetting::where('category', 'google_maps')
+            ->where('key', 'google_maps_api_key')
+            ->where('is_public', true)
+            ->first();
+
+        return response()->json([
+            'api_key' => $apiKey ? $apiKey->value : null
+        ]);
+    }
 }

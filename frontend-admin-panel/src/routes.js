@@ -7,6 +7,12 @@ const Transazioni = React.lazy(() => import('./views/pages/Transazioni.js'))
 const Statistiche = React.lazy(() => import('./views/pages/Statistiche.js'))
 const Impostazioni = React.lazy(() => import('./views/pages/Impostazioni.js'))
 
+// Staff Management
+const Staff = React.lazy(() => import('./views/staff/Staff.js'))
+
+// Settings
+const LogoSettings = React.lazy(() => import('./views/settings/LogoSettings.js'))
+
 // === 🟡 Existing CoreUI Demo Pages ===
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard.js'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors.js'))
@@ -69,9 +75,13 @@ const routes = [
   // --- ✅ Your Custom Pages ---
   { path: '/bar', name: '🏪 Bar', element: Bar },
   { path: '/clienti', name: '👤 Clienti', element: Clienti },
+  { path: '/staff', name: '👥 Staff', element: Staff },
   { path: '/transazioni', name: '💳 Transazioni', element: Transazioni },
   { path: '/statistiche', name: '📈 Statistiche', element: Statistiche },
   { path: '/impostazioni', name: '⚙️ Impostazioni', element: Impostazioni },
+  
+  // --- 🎨 Settings Pages ---
+  { path: '/settings/logo', name: 'Logo Settings', element: LogoSettings },
 
   // --- 🟡 CoreUI Demo Pages (remove later if not needed) ---
   { path: '/theme', name: 'Theme', element: Colors, exact: true },

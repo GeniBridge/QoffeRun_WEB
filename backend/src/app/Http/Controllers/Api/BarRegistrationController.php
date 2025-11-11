@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Bar;
 use App\Models\User;
+use App\Services\EmailService;
+use App\Mail\BarRegistrationWelcome;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BarRegistrationController extends Controller
@@ -125,10 +128,30 @@ class BarRegistrationController extends Controller
 
             DB::commit();
 
+            // Send welcome email
+            try {
+                $barData = [
+                    'nome' => $bar->name,
+                    'citta' => $request->citta,
+                ];
+                
+                $userData = [
+                    'nome' => $request->gestore_nome . ' ' . $request->gestore_cognome,
+                ];
+                
+                $welcomeEmail = new BarRegistrationWelcome($barData, $userData);
+                EmailService::sendFromNoReply($welcomeEmail, [$request->gestore_email]);
+                
+                Log::info("Welcome email sent to: {$request->gestore_email} for bar: {$bar->name}");
+            } catch (\Exception $emailError) {
+                // Log error but don't fail registration
+                Log::warning("Failed to send welcome email: " . $emailError->getMessage());
+            }
+
             // Return success response with bar data
             return response()->json([
                 'success' => true,
-                'message' => 'Registrazione completata con successo! Il tuo bar è in attesa di approvazione.',
+                'message' => 'Registrazione completata con successo! Il tuo bar è in attesa di approvazione. Controlla la tua email per i dettagli.',
                 'data' => [
                     'bar_id' => $bar->id,
                     'bar_name' => $bar->name,

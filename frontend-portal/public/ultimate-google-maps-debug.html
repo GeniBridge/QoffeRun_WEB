@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultimate Google Maps Diagnostic</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .log { background-color: #f8f9fa; padding: 10px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; }
+        input[type="text"] { width: 400px; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Ultimate Google Maps API Diagnostic</h1>
+    
+    <div id="status-container"></div>
+    
+    <h2>📍 Test Autocomplete</h2>
+    <input type="text" id="addressInput" placeholder="Type an address to test autocomplete..." disabled>
+    
+    <h2>📋 Diagnostic Log</h2>
+    <div id="log" class="log"></div>
+    
+    <h2>🔧 Manual Tests</h2>
+    <button onclick="testDirectAPI()">Test Direct API Call</button>
+    <button onclick="testScriptLoad()">Test Script Loading</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <script>
+        let logDiv = document.getElementById('log');
+        let statusContainer = document.getElementById('status-container');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logMessage = `[${timestamp}] ${message}`;
+            console.log(logMessage);
+            logDiv.textContent += logMessage + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function setStatus(message, type = 'info') {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusContainer.appendChild(statusDiv);
+        }
+        
+        function clearLog() {
+            logDiv.textContent = '';
+            statusContainer.innerHTML = '';
+        }
+        
+        // Global error handler
+        window.gm_authFailure = function() {
+            log('❌ Google Maps authentication failure detected!', 'error');
+            setStatus('Authentication failed - check API key restrictions', 'error');
+        };
+        
+        // Handle all errors
+        window.addEventListener('error', function(e) {
+            log(`❌ JavaScript Error: ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+        });
+        
+        async function loadAPIKey() {
+            try {
+                log('🔑 Loading API key from backend...', 'info');
+                const response = await fetch('https://api.qofferun.com/api/v1/settings/public/google_maps');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`✅ API Key received: ${data.api_key ? data.api_key.substring(0, 15) + '...' : 'NULL'}`, 'success');
+                
+                return data.api_key;
+            } catch (error) {
+                log(`❌ Failed to load API key: ${error.message}`, 'error');
+                setStatus('Failed to load API key from backend', 'error');
+                return null;
+            }
+        }
+        
+        async function loadGoogleMapsAPI() {
+            const apiKey = await loadAPIKey();
+            if (!apiKey) return;
+            
+            log('🌐 Environment Info:', 'info');
+            log(`   Domain: ${window.location.hostname}`, 'info');
+            log(`   Protocol: ${window.location.protocol}`, 'info');
+            log(`   Referrer: ${document.referrer || 'None'}`, 'info');
+            log(`   User Agent: ${navigator.userAgent}`, 'info');
+            
+            return new Promise((resolve, reject) => {
+                const callbackName = 'gmapsCallback_' + Date.now();
+                
+                window[callbackName] = function() {
+                    log('✅ Google Maps callback executed successfully!', 'success');
+                    
+                    // Check what's available
+                    log('🔍 Checking available APIs:', 'info');
+                    log(`   google: ${!!window.google}`, 'info');
+                    log(`   google.maps: ${!!window.google?.maps}`, 'info');
+                    log(`   google.maps.places: ${!!window.google?.maps?.places}`, 'info');
+                    log(`   google.maps.places.Autocomplete: ${!!window.google?.maps?.places?.Autocomplete}`, 'info');
+                    
+                    if (window.google?.maps?.places?.Autocomplete) {
+                        setStatus('Google Maps API loaded successfully!', 'success');
+                        initAutocomplete();
+                        resolve();
+                    } else {
+                        setStatus('Google Maps API loaded but Places service unavailable', 'warning');
+                        reject(new Error('Places API not available'));
+                    }
+                    
+                    delete window[callbackName];
+                };
+                
+                const script = document.createElement('script');
+                const url = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`;
+                script.src = url;
+                script.async = true;
+                
+                log(`🔗 Loading script: ${url.substring(0, 100)}...`, 'info');
+                
+                script.onload = function() {
+                    log('✅ Script onload event fired', 'info');
+                };
+                
+                script.onerror = function(e) {
+                    log(`❌ Script loading error: ${e.type} - ${e.message}`, 'error');
+                    setStatus('Failed to load Google Maps script', 'error');
+                    delete window[callbackName];
+                    reject(e);
+                };
+                
+                document.head.appendChild(script);
+                
+                // Timeout
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        log('⏰ Google Maps loading timeout (15s)', 'error');
+                        setStatus('Google Maps loading timeout', 'error');
+                        delete window[callbackName];
+                        reject(new Error('Timeout'));
+                    }
+                }, 15000);
+            });
+        }
+        
+        function initAutocomplete() {
+            try {
+                const input = document.getElementById('addressInput');
+                input.disabled = false;
+                
+                const autocomplete = new google.maps.places.Autocomplete(input, {
+                    types: ['address'],
+                    componentRestrictions: { country: 'IT' }
+                });
+                
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    log(`📍 Place selected: ${place.formatted_address}`, 'success');
+                    
+                    if (place.geometry) {
+                        log(`   Coordinates: ${place.geometry.location.lat()}, ${place.geometry.location.lng()}`, 'info');
+                    }
+                });
+                
+                log('✅ Autocomplete initialized successfully', 'success');
+                setStatus('Autocomplete ready - try typing an address!', 'success');
+                
+            } catch (error) {
+                log(`❌ Autocomplete initialization error: ${error.message}`, 'error');
+                setStatus('Failed to initialize autocomplete', 'error');
+            }
+        }
+        
+        function testDirectAPI() {
+            loadAPIKey().then(apiKey => {
+                if (!apiKey) return;
+                
+                log('🧪 Testing direct Geocoding API call...', 'info');
+                
+                fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=Milano,Italia&key=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'OK') {
+                            log('✅ Direct API call successful', 'success');
+                            log(`   Result: ${data.results[0].formatted_address}`, 'info');
+                            setStatus('Direct API calls working', 'success');
+                        } else {
+                            log(`❌ Direct API call failed: ${data.status} - ${data.error_message || 'No error message'}`, 'error');
+                            setStatus('Direct API calls failing', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ Direct API call error: ${error.message}`, 'error');
+                        setStatus('Direct API call network error', 'error');
+                    });
+            });
+        }
+        
+        function testScriptLoad() {
+            log('🧪 Testing script loading process...', 'info');
+            loadGoogleMapsAPI().catch(error => {
+                log(`❌ Script loading test failed: ${error.message}`, 'error');
+            });
+        }
+        
+        // Auto-start diagnostic
+        log('🚀 Starting Google Maps diagnostic...', 'info');
+        setStatus('Starting diagnostic...', 'info');
+        
+        loadGoogleMapsAPI().catch(error => {
+            log(`❌ Initial load failed: ${error.message}`, 'error');
+            setStatus('Google Maps API loading failed', 'error');
+        });
+    </script>
+</body>
+</html>

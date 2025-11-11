@@ -1,0 +1,48 @@
+<!-- QoffeRun Logo SVG based on user's design -->
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Coffee cup with steam and clock -->
+  <g transform="translate(10, 10)">
+    <!-- Cup body -->
+    <path d="M10 30 L10 80 Q10 90 20 90 L50 90 Q60 90 60 80 L60 30 Q60 25 55 25 L15 25 Q10 25 10 30 Z" fill="#FF9030"/>
+    
+    <!-- Cup lid -->
+    <ellipse cx="35" cy="25" rx="25" ry="5" fill="#FF7820"/>
+    
+    <!-- Steam curves -->
+    <path d="M25 15 Q28 8 25 3 Q22 8 25 15" fill="#FF9030" opacity="0.8"/>
+    <path d="M35 15 Q38 8 35 3 Q32 8 35 15" fill="#FF9030" opacity="0.8"/>
+    <path d="M45 15 Q48 8 45 3 Q42 8 45 15" fill="#FF9030" opacity="0.8"/>
+    
+    <!-- Clock face in cup -->
+    <circle cx="35" cy="55" r="20" fill="white" stroke="#FF9030" stroke-width="2"/>
+    
+    <!-- Clock hands -->
+    <line x1="35" y1="55" x2="35" y2="45" stroke="#FF7820" stroke-width="2" stroke-linecap="round"/>
+    <line x1="35" y1="55" x2="42" y2="55" stroke="#FF7820" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Clock dots -->
+    <circle cx="35" cy="40" r="1.5" fill="#FF7820"/>
+    <circle cx="35" cy="70" r="1.5" fill="#FF7820"/>
+    <circle cx="50" cy="55" r="1.5" fill="#FF7820"/>
+    <circle cx="20" cy="55" r="1.5" fill="#FF7820"/>
+    
+    <!-- Center dot -->
+    <circle cx="35" cy="55" r="2" fill="#FF7820"/>
+    
+    <!-- Arrow pointing right -->
+    <path d="M70 45 L85 55 L70 65 L75 55 Z" fill="#FF9030"/>
+  </g>
+  
+  <!-- Text "QoffeRun" -->
+  <text x="120" y="50" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#2C3E50">
+    Qoffe
+  </text>
+  <text x="240" y="50" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#2C3E50">
+    Run
+  </text>
+  
+  <!-- Tagline -->
+  <text x="120" y="75" font-family="Arial, sans-serif" font-size="14" fill="#666">
+    Ordina • Paga • Ritira
+  </text>
+</svg>

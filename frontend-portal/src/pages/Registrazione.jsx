@@ -70,6 +70,11 @@ export default function Registrazione(){
   const dettagliBar = useForm({ 
     nome: '', 
     descrizione: '', 
+    // Campi individuali per il form
+    citta: '',
+    provincia: '',
+    regione: '',
+    cap: '',
     // Indirizzo strutturato con Google Maps
     indirizzo: {
       formatted_address: '',
@@ -145,7 +150,7 @@ export default function Registrazione(){
       if (payload.logo) formData.append('logo', payload.logo)
       if (payload.cover) formData.append('cover', payload.cover)
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bar/registrazione`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/bar/registrazione`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -190,92 +195,116 @@ export default function Registrazione(){
           {currentStep === 1 && (
             <div>
               <h2 className='text-2xl font-semibold mb-6 text-neutral-900'>Dettagli del Bar</h2>
-              <div className='grid md:grid-cols-2 gap-6'>
-                <Field label='Nome del bar' required>
+              
+              {/* Prima riga: Nome locale */}
+              <div className='mb-6'>
+                <Field label='Nome locale' required>
                   <input 
                     className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
                     value={dettagliBar.data.nome} 
                     onChange={dettagliBar.set('nome')} 
-                    placeholder='Es. Bar Central' 
+                    placeholder='Es. Bar Centrale, Caffetteria Roma...' 
+                  />
+                </Field>
+              </div>
+
+              {/* Seconda riga: Descrizione */}
+              <div className='mb-6'>
+                <Field label='Descrizione' required>
+                  <textarea 
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
+                    rows={3}
+                    value={dettagliBar.data.descrizione} 
+                    onChange={dettagliBar.set('descrizione')} 
+                    placeholder='Descrivi il tuo locale: ambiente, specialità, caratteristiche...'
+                  />
+                </Field>
+              </div>
+
+              {/* Terza riga: Indirizzo completo */}
+              <div className='mb-6'>
+                <Field label='Indirizzo completo' required>
+                  <GoogleAddressAutocomplete
+                    value={dettagliBar.data.indirizzo}
+                    onChange={(addressData) => {
+                      dettagliBar.setData(prev => ({
+                        ...prev,
+                        indirizzo: addressData,
+                        // Aggiorna anche i campi separati
+                        citta: addressData.citta || prev.citta,
+                        provincia: addressData.provincia || prev.provincia,
+                        regione: addressData.regione || prev.regione,
+                        cap: addressData.cap || prev.cap
+                      }))
+                    }}
+                    placeholder="Cerca e seleziona l'indirizzo completo del locale..."
+                    required={true}
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent'
+                  />
+                </Field>
+              </div>
+
+              {/* Quarta riga: Città, Regione, Provincia, CAP */}
+              <div className='grid md:grid-cols-4 gap-4 mb-6'>
+                <Field label='Città' required>
+                  <input 
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent bg-neutral-50' 
+                    value={dettagliBar.data.citta} 
+                    onChange={dettagliBar.set('citta')} 
+                    placeholder='Es. Roma'
+                    readOnly={dettagliBar.data.indirizzo.citta}
                   />
                 </Field>
                 
-                <Field label='Città'>
+                <Field label='Regione' required>
                   <input 
-                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
-                    value={dettagliBar.data.citta} 
-                    onChange={dettagliBar.set('citta')} 
-                    placeholder='Es. Roma' 
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent bg-neutral-50' 
+                    value={dettagliBar.data.regione} 
+                    onChange={dettagliBar.set('regione')} 
+                    placeholder='Es. Lazio'
+                    readOnly={dettagliBar.data.indirizzo.regione}
+                  />
+                </Field>
+                
+                <Field label='Provincia' required>
+                  <input 
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent bg-neutral-50' 
+                    value={dettagliBar.data.provincia} 
+                    onChange={dettagliBar.set('provincia')} 
+                    placeholder='Es. RM'
+                    readOnly={dettagliBar.data.indirizzo.provincia}
                   />
                 </Field>
 
-                <div className='md:col-span-2'>
-                  <Field label='Descrizione' required>
-                    <textarea 
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent' 
-                      rows={3}
-                      value={dettagliBar.data.descrizione} 
-                      onChange={dettagliBar.set('descrizione')} 
-                      placeholder='Racconta qualcosa sul tuo bar...'
-                    />
-                  </Field>
-                </div>
+                <Field label='CAP' required>
+                  <input 
+                    className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent bg-neutral-50' 
+                    value={dettagliBar.data.cap} 
+                    onChange={dettagliBar.set('cap')} 
+                    placeholder='Es. 00100'
+                    readOnly={dettagliBar.data.indirizzo.cap}
+                  />
+                </Field>
+              </div>
 
-                <div className='md:col-span-2'>
-                  <Field label='Indirizzo completo' required>
-                    <GoogleAddressAutocomplete
-                      value={dettagliBar.data.indirizzo}
-                      onChange={(addressData) => {
-                        dettagliBar.setData(prev => ({
-                          ...prev,
-                          indirizzo: addressData
-                        }))
-                      }}
-                      placeholder="Cerca e seleziona l'indirizzo del bar..."
-                      required={true}
-                      className='w-full border border-neutral-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-qorange-500 focus:border-transparent'
-                    />
-                  </Field>
-                </div>
-
-                {/* Campi indirizzo automatici (read-only) */}
-                {dettagliBar.data.indirizzo.formatted_address && (
-                  <div className='md:col-span-2 space-y-4 p-4 bg-neutral-50 rounded-lg'>
-                    <h4 className='font-medium text-neutral-800 text-sm'>📍 Dettagli indirizzo selezionato:</h4>
-                    <div className='grid md:grid-cols-2 gap-4 text-sm'>
-                      <div>
-                        <span className='font-medium text-neutral-600'>Via/Piazza:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.via || 'N/A'}</div>
-                      </div>
-                      <div>
-                        <span className='font-medium text-neutral-600'>Numero civico:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.numero_civico || 'N/A'}</div>
-                      </div>
-                      <div>
-                        <span className='font-medium text-neutral-600'>Città:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.citta}</div>
-                      </div>
-                      <div>
-                        <span className='font-medium text-neutral-600'>CAP:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.cap}</div>
-                      </div>
-                      <div>
-                        <span className='font-medium text-neutral-600'>Provincia:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.provincia}</div>
-                      </div>
-                      <div>
-                        <span className='font-medium text-neutral-600'>Regione:</span>
-                        <div className='text-neutral-800'>{dettagliBar.data.indirizzo.regione}</div>
-                      </div>
-                    </div>
-                    {dettagliBar.data.indirizzo.lat && dettagliBar.data.indirizzo.lng && (
-                      <div className='text-xs text-neutral-500'>
-                        📌 Coordinate: {dettagliBar.data.indirizzo.lat.toFixed(6)}, {dettagliBar.data.indirizzo.lng.toFixed(6)}
+              {/* Riepilogo indirizzo selezionato */}
+              {dettagliBar.data.indirizzo.formatted_address && (
+                <div className='p-4 bg-green-50 border border-green-200 rounded-lg'>
+                  <h4 className='font-medium text-green-800 mb-2'>✅ Indirizzo verificato</h4>
+                  <p className='text-green-700 text-sm mb-2'>{dettagliBar.data.indirizzo.formatted_address}</p>
+                  <div className='grid grid-cols-2 gap-2 text-xs text-green-600'>
+                    <div><strong>Via:</strong> {dettagliBar.data.indirizzo.via} {dettagliBar.data.indirizzo.numero_civico}</div>
+                    <div><strong>Città:</strong> {dettagliBar.data.indirizzo.citta}</div>
+                    <div><strong>Provincia:</strong> {dettagliBar.data.indirizzo.provincia}</div>
+                    <div><strong>Regione:</strong> {dettagliBar.data.indirizzo.regione}</div>
+                    {dettagliBar.data.indirizzo.lat && (
+                      <div className='col-span-2'>
+                        <strong>Coordinate:</strong> {dettagliBar.data.indirizzo.lat.toFixed(6)}, {dettagliBar.data.indirizzo.lng.toFixed(6)}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 

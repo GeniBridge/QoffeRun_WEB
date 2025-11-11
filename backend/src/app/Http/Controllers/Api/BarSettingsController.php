@@ -12,6 +12,30 @@ use Illuminate\Validation\Rule;
 class BarSettingsController extends Controller
 {
     /**
+     * Ottieni tutti i bar (solo per admin)
+     */
+    public function getAllBars(Request $request): JsonResponse
+    {
+        // Solo gli admin possono vedere tutti i bar
+        $user = $request->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accesso negato'
+            ], 403);
+        }
+
+        $bars = Bar::with(['user:id,name,email,phone'])
+                   ->orderBy('name')
+                   ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $bars
+        ]);
+    }
+
+    /**
      * Ottieni tutte le impostazioni di un bar
      */
     public function index(Request $request, int $barId): JsonResponse

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Google Maps Test</title>
+</head>
+<body>
+    <h1>Simple Google Maps Test</h1>
+    <input type="text" id="autocomplete" placeholder="Enter an address" style="width: 400px; padding: 10px;">
+    <div id="result"></div>
+    <div id="errors" style="color: red; margin-top: 20px;"></div>
+
+    <script>
+        function initAutocomplete() {
+            console.log('Initializing autocomplete...');
+            const input = document.getElementById('autocomplete');
+            const options = {
+                types: ['address'],
+                componentRestrictions: { country: 'IT' }
+            };
+
+            try {
+                const autocomplete = new google.maps.places.Autocomplete(input, options);
+                
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    if (!place.geometry) {
+                        document.getElementById('result').innerHTML = 'No details available for: ' + place.name;
+                        return;
+                    }
+                    
+                    document.getElementById('result').innerHTML = `
+                        <h3>Selected Place:</h3>
+                        <p><strong>Address:</strong> ${place.formatted_address}</p>
+                        <p><strong>Coordinates:</strong> ${place.geometry.location.lat()}, ${place.geometry.location.lng()}</p>
+                    `;
+                });
+                
+                console.log('Autocomplete initialized successfully');
+            } catch (error) {
+                console.error('Error initializing autocomplete:', error);
+                document.getElementById('errors').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        // Global error handler
+        window.gm_authFailure = function() {
+            console.error('Google Maps authentication failure');
+            document.getElementById('errors').innerHTML = 'Authentication failed. Check API key and domain restrictions.';
+        };
+
+        // Handle script errors
+        window.addEventListener('error', function(e) {
+            if (e.filename && e.filename.includes('maps.googleapis.com')) {
+                console.error('Google Maps script error:', e.message);
+                document.getElementById('errors').innerHTML = 'Maps API Error: ' + e.message;
+            }
+        });
+    </script>
+
+    <!-- Load Google Maps API with the actual key -->
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyClVGm2fu7WGY9HdENtcapm8Sq5WQHUlHE&libraries=places&callback=initAutocomplete">
+    </script>
+</body>
+</html>

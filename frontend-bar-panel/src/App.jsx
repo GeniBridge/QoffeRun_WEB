@@ -4,6 +4,7 @@ import { NavLink, Routes, Route, useLocation, useNavigate } from 'react-router-d
 
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import StoricoOrdini from './pages/StoricoOrdini';
 import Pagamenti from './pages/Pagamenti';
 import Menu from './pages/Menu';
@@ -11,6 +12,7 @@ import QRCodePage from './pages/QRCode';
 import Impostazione from './pages/Impostazione';
 
 import { CartProvider } from './context/CartContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import CartPanel from './components/CartPanel';
 
 import logo from './assets/logo.png';
@@ -44,7 +46,7 @@ function Sidebar() {
   );
 }
 
-function Header({ onLogout }) {
+function Header({ onLogout, user }) {
   return (
     <header className="app-header">
       <div className="container-fluid py-2">
@@ -66,7 +68,7 @@ function Header({ onLogout }) {
             <span className="badge bg-success-subtle text-success">POS Online</span>
             <div className="dropdown">
               <button className="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
-                <i className="bi bi-person-circle me-2"></i>John
+                <i className="bi bi-person-circle me-2"></i>{user?.name || user?.email || 'User'}
               </button>
               <div className="dropdown-menu dropdown-menu-end">
                 <button className="dropdown-item" type="button">My Profile</button>
@@ -84,47 +86,56 @@ function Header({ onLogout }) {
   );
 }
 
-// ----- APP -----
-export default function App() {
+// App Component with Authentication
+function AppContent() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem('isAuthenticated') === 'true'
-  );
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
 
   useEffect(() => {
-    // reindirizza alla login se non autenticato
-    if (!isAuthenticated && pathname !== '/login') {
+    // Redirect to login if not authenticated
+    if (!isLoading && !isAuthenticated && pathname !== '/login') {
       navigate('/login', { replace: true });
     }
-  }, [isAuthenticated, pathname, navigate]);
+  }, [isAuthenticated, pathname, navigate, isLoading]);
 
   const handleLogin = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('isAuthenticated', 'true');
     navigate('/dashboard', { replace: true });
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    await logout();
     navigate('/login', { replace: true });
   };
+
+  // Show loading spinner during auth check
+  if (isLoading) {
+    return (
+      <div className="d-flex align-items-center justify-content-center vh-100">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div>Caricamento...</div>
+        </div>
+      </div>
+    );
+  }
 
   const hideRightRoutes = ['/storico-ordini', '/pagamenti', '/menu', '/qrcode', '/impostazione'];
   const hideRight = hideRightRoutes.includes(pathname);
 
   return (
-    <CartProvider>
+    <>
       {!isAuthenticated ? (
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Login onLogin={handleLogin} />} />
         </Routes>
       ) : (
         <div className={`app ${hideRight ? 'hide-right' : ''}`}>
-          <Header onLogout={handleLogout} />
+          <Header onLogout={handleLogout} user={user} />
           <Sidebar />
           <main className="content">
             <Routes>
@@ -142,6 +153,17 @@ export default function App() {
           {!hideRight && <CartPanel />}
         </div>
       )}
-    </CartProvider>
+    </>
+  );
+}
+
+// ----- MAIN APP WITH PROVIDERS -----
+export default function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </AuthProvider>
   );
 }
