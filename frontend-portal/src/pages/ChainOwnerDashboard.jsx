@@ -53,6 +53,8 @@ export default function ChainOwnerDashboard() {
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [ordersToday, setOrdersToday] = useState(0)
+  const [revenueThisMonth, setRevenueThisMonth] = useState(0)
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
@@ -69,37 +71,71 @@ export default function ChainOwnerDashboard() {
 
   const loadDashboardData = async (token) => {
     try {
-      // Load chain data
-      const chainResponse = await fetch('https://api.qofferun.com/api/v1/chains/my-chains', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      })
+      // Try protected chain + branches endpoints first
+      let loaded = false
+      try {
+        const chainResponse = await fetch('https://api.qofferun.com/api/v1/chains/my-chains', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
+        if (chainResponse.ok) {
+          const chainData = await chainResponse.json()
+          const userChain = chainData.data?.[0]
+          if (userChain) {
+            setChain(userChain)
+            const branchesResponse = await fetch(`https://api.qofferun.com/api/v1/branches`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              }
+            })
+            if (branchesResponse.ok) {
+              const branchesData = await branchesResponse.json()
+              const chainBranches = (branchesData.data || []).filter(b => b.chain_id === userChain.id)
+              setBranches(chainBranches)
+              // Fetch real metrics for KPI cards in parallel
+              try {
+                const overviews = await Promise.all(
+                  chainBranches.map(async (b) => {
+                    try {
+                      const res = await fetch(`https://api.qofferun.com/api/v1/branches/${b.id}/overview`, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Accept': 'application/json'
+                        }
+                      })
+                      if (!res.ok) return null
+                      const payload = await res.json()
+                      return payload?.data || null
+                    } catch (_) { return null }
+                  })
+                )
 
-      if (chainResponse.ok) {
-        const chainData = await chainResponse.json()
-        const userChain = chainData.data[0] // Get first chain
-        setChain(userChain)
+                const valid = overviews.filter(Boolean)
+                const sumOrders = valid.reduce((acc, ov) => acc + (Number(ov.ordini_oggi) || 0), 0)
+                const sumRevenue = valid.reduce((acc, ov) => acc + (Number(ov.fatturato_mese) || 0), 0)
 
-        // Load branches for this chain
-        if (userChain) {
-          const branchesResponse = await fetch(`https://api.qofferun.com/api/v1/branches`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
+                setOrdersToday(sumOrders)
+                setRevenueThisMonth(sumRevenue)
+              } catch (_) {}
+              loaded = true
             }
-          })
+          }
+        }
+      } catch (_) {}
 
-          if (branchesResponse.ok) {
-            const branchesData = await branchesResponse.json()
-            console.log('Tutte le filiali:', branchesData.data)
-            // Filter branches for current chain
-            const chainBranches = branchesData.data.filter(branch => branch.chain_id === userChain.id)
-            console.log('Filiali per catena', userChain.id, ':', chainBranches)
-            setBranches(chainBranches)
-          } else {
-            console.log('Errore caricamento filiali:', await branchesResponse.text())
+      // Fallback: use public debug endpoints to at least render branches
+      if (!loaded) {
+        const dbgBranches = await fetch('https://qofferun.com/api/v1/debug-branches')
+        if (dbgBranches.ok) {
+          const data = await dbgBranches.json()
+          const allBranches = data.data || []
+          setBranches(allBranches)
+          // derive a pseudo chain from first branch
+          if (allBranches.length > 0) {
+            setChain({ id: allBranches[0].chain_id, name: allBranches[0].chain_name, status: 'active' })
           }
         }
       }
@@ -204,21 +240,15 @@ export default function ChainOwnerDashboard() {
           />
           <KPICard 
             title="Ordini Oggi"
-            value="0"
-            subtitle="Nessun ordine registrato"
+            value={ordersToday}
+            subtitle={branches.length ? `Somma dalle filiali (${branches.length})` : 'Nessuna filiale'}
             icon="📋"
           />
           <KPICard 
             title="Fatturato Mese"
-            value="€ 0"
-            subtitle="In attesa di ordini"
+            value={`€ ${Number(revenueThisMonth || 0).toFixed(2)}`}
+            subtitle={branches.length ? `Somma dalle filiali (${branches.length})` : 'Nessuna filiale'}
             icon="💰"
-          />
-          <KPICard 
-            title="Commissioni"
-            value={`${chain?.commission_rate || 15}%`}
-            subtitle="Tasso applicato"
-            icon="📊"
           />
         </div>
 

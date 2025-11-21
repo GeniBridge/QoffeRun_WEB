@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QoffeRun - Stripe Connect Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .order-card { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; }
+        .status-badge { font-size: 0.8em; }
+        .test-result { margin-top: 10px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">🧪 QoffeRun Stripe Connect Test</h1>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Test Orders</h5>
+                        <button class="btn btn-primary btn-sm float-end" onclick="loadTestOrders()">Refresh Orders</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="orders-container">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Test Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">
+                            This page allows you to test Stripe Connect functionality by simulating payment captures and transfers.
+                        </p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">API Base URL:</label>
+                            <input type="text" class="form-control form-control-sm" id="apiUrl" value="https://api.qofferun.com/api/v1">
+                        </div>
+                        
+                        <div id="test-results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = () => document.getElementById('apiUrl').value;
+        
+        async function loadTestOrders() {
+            try {
+                const response = await fetch(`${API_BASE()}/test/orders`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayOrders(result.data);
+                } else {
+                    showError('Failed to load orders: ' + result.message);
+                }
+            } catch (error) {
+                showError('Error loading orders: ' + error.message);
+            }
+        }
+        
+        function displayOrders(orders) {
+            const container = document.getElementById('orders-container');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<p class="text-muted">No test orders found. Run the TestOrdersSeeder first.</p>';
+                return;
+            }
+            
+            container.innerHTML = orders.map(order => `
+                <div class="order-card p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <strong>Order #${order.order_number}</strong>
+                            <br>
+                            <small class="text-muted">${order.customer_name}</small>
+                        </div>
+                        <div>
+                            <span class="badge ${getStatusColor(order.status)} status-badge">${order.status}</span>
+                            <br>
+                            <span class="badge ${getCommissionStatusColor(order.commission_status)} status-badge mt-1">${order.commission_status}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <small><strong>Total:</strong> €${order.total}</small><br>
+                            <small><strong>Commission:</strong> €${order.commission_amount || '0.00'}</small><br>
+                            <small><strong>Branch Amount:</strong> €${order.branch_amount || '0.00'}</small>
+                        </div>
+                        <div class="col-6">
+                            <small><strong>Payment ID:</strong><br>${order.stripe_payment_intent_id || 'N/A'}</small><br>
+                            <small><strong>Transfer ID:</strong><br>${order.stripe_transfer_id || 'N/A'}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2">
+                        ${order.commission_status === 'pending' ? 
+                            `<button class="btn btn-success btn-sm" onclick="simulateCapture(${order.id})">
+                                🚀 Simulate Stripe Capture
+                            </button>` : 
+                            `<span class="text-success">✅ Already processed</span>`
+                        }
+                    </div>
+                    
+                    <div id="result-${order.id}"></div>
+                </div>
+            `).join('');
+        }
+        
+        async function simulateCapture(orderId) {
+            try {
+                const response = await fetch(`${API_BASE()}/test/orders/${orderId}/simulate-capture`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById(`result-${orderId}`);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="test-result success">
+                            <strong>✅ Capture Simulated!</strong><br>
+                            <small>Commission: €${result.data.commission_amount}</small><br>
+                            <small>Branch Amount: €${result.data.branch_amount}</small><br>
+                            <small>Transfer ID: ${result.data.transfer_id}</small>
+                        </div>
+                    `;
+                    
+                    // Refresh orders after 1 second
+                    setTimeout(loadTestOrders, 1000);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="test-result error">
+                            <strong>❌ Error:</strong> ${result.message}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById(`result-${orderId}`).innerHTML = `
+                    <div class="test-result error">
+                        <strong>❌ Network Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'bg-warning text-dark',
+                'confirmed': 'bg-info text-white',
+                'ready': 'bg-primary text-white',
+                'completed': 'bg-success text-white',
+                'cancelled': 'bg-danger text-white'
+            };
+            return colors[status] || 'bg-secondary text-white';
+        }
+        
+        function getCommissionStatusColor(status) {
+            const colors = {
+                'pending': 'bg-warning text-dark',
+                'transferred': 'bg-success text-white',
+                'failed': 'bg-danger text-white'
+            };
+            return colors[status] || 'bg-secondary text-white';
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+        }
+        
+        // Load orders on page load
+        document.addEventListener('DOMContentLoaded', loadTestOrders);
+    </script>
+</body>
+</html>

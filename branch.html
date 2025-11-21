@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QoffeRun - Bar Details</title>
+    
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --qorange-primary: #ff6b35;
+            --qorange-secondary: #ff8c69;
+            --qorange-light: #fff5f2;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+        }
+        
+        .header-card {
+            background: linear-gradient(135deg, var(--qorange-primary) 0%, var(--qorange-secondary) 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .chain-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .menu-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            border: none;
+        }
+        
+        .category-header {
+            background: var(--qorange-light);
+            color: var(--qorange-primary);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .product-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover {
+            border-color: var(--qorange-primary);
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.1);
+        }
+        
+        .product-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: #f8f9fa;
+        }
+        
+        .price-badge {
+            background: var(--qorange-primary);
+            color: white;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-weight: 600;
+        }
+        
+        .cart-sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            width: 400px;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1050;
+            overflow-y: auto;
+        }
+        
+        .cart-sidebar.show {
+            transform: translateX(0);
+        }
+        
+        .cart-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1040;
+        }
+        
+        .cart-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .cart-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .reviews-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            border: none;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .review-item {
+            border-left: 4px solid var(--qorange-primary);
+            padding: 15px 20px;
+            background: var(--qorange-light);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 15px;
+        }
+        
+        .rating-stars {
+            color: #ffc107;
+        }
+        
+        .floating-cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--qorange-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 25px;
+            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .floating-cart-btn:hover {
+            background: var(--qorange-secondary);
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .cart-sidebar {
+                width: 100%;
+            }
+            
+            .header-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="branch-discovery.html">
+                <i class="bi bi-arrow-left me-2"></i>
+                <strong style="color: var(--qorange-primary);">← Torna ai Bar</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-outline-primary" id="toggleCart">
+                    <i class="bi bi-bag me-2"></i>
+                    Carrello (<span id="cartCount">0</span>)
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Loading -->
+        <div id="loading" class="text-center py-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+            <p class="mt-3 text-muted">Caricamento dettagli bar...</p>
+        </div>
+
+        <!-- Branch Header -->
+        <div id="branchHeader" style="display: none;">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviewsSection" style="display: none;">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Menu Section -->
+        <div id="menuSection" style="display: none;">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Error Section -->
+        <div id="errorSection" style="display: none;" class="text-center py-5">
+            <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+            <h4 class="mt-3">Errore nel caricamento</h4>
+            <p class="text-muted">Impossibile caricare i dettagli del bar. Riprova più tardi.</p>
+            <button class="btn btn-primary" onclick="window.location.reload()">Ricarica Pagina</button>
+        </div>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <button id="floatingCartBtn" class="floating-cart-btn" style="display: none;" onclick="toggleCart()">
+        <i class="bi bi-bag-fill me-2"></i>
+        <span id="floatingCartCount">0</span> articoli
+    </button>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="p-4">
+            <!-- Cart Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Il Tuo Ordine</h5>
+                <button class="btn-close" onclick="toggleCart()"></button>
+            </div>
+
+            <!-- Cart Items -->
+            <div id="cartItems">
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-bag display-4"></i>
+                    <p class="mt-2">Il tuo carrello è vuoto</p>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div id="cartSummary" style="display: none;" class="border-top pt-3 mt-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotale:</span>
+                    <strong id="cartSubtotal">€0.00</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Totale:</span>
+                    <strong class="text-primary" id="cartTotal">€0.00</strong>
+                </div>
+                <button class="btn btn-primary w-100" onclick="startCheckout()">
+                    <i class="bi bi-credit-card me-2"></i>Procedi al Pagamento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customization Modal -->
+    <div class="modal fade" id="customizationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Personalizza il tuo ordine</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="customizationBody">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <div class="d-flex justify-content-between w-100">
+                        <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-outline-secondary" id="quantityMinus">-</button>
+                            <span id="currentQuantity" class="fw-bold">1</span>
+                            <button class="btn btn-outline-secondary" id="quantityPlus">+</button>
+                        </div>
+                        <button class="btn btn-primary" id="addToCartBtn">
+                            Aggiungi al Carrello - <span id="modalPrice">€0.00</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const API_BASE = 'https://api.qofferun.com/api/v1/public';
+        let branchData = null;
+        let cart = [];
+        let currentProduct = null;
+        let customizationModal;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const branchId = new URLSearchParams(window.location.search).get('id');
+            if (!branchId) {
+                showError('ID bar non specificato');
+                return;
+            }
+            
+            customizationModal = new bootstrap.Modal(document.getElementById('customizationModal'));
+            loadBranchDetails(branchId);
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('toggleCart').addEventListener('click', toggleCart);
+            document.getElementById('quantityMinus').addEventListener('click', () => updateModalQuantity(-1));
+            document.getElementById('quantityPlus').addEventListener('click', () => updateModalQuantity(1));
+            document.getElementById('addToCartBtn').addEventListener('click', addCurrentProductToCart);
+        }
+
+        // API Functions
+        async function loadBranchDetails(branchId) {
+            try {
+                const response = await fetch(`${API_BASE}/branches/${branchId}`);
+                if (!response.ok) throw new Error('Branch not found');
+                
+                const result = await response.json();
+                branchData = result.data;
+                
+                displayBranchHeader();
+                displayReviews();
+                displayMenu();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error loading branch:', error);
+                showError('Errore nel caricamento del bar');
+            }
+        }
+
+        // Display Functions
+        function displayBranchHeader() {
+            const branch = branchData.branch;
+            const chain = branchData.chain;
+            
+            document.getElementById('branchHeader').innerHTML = `
+                <div class="header-card">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="chain-logo">
+                                ${chain.logo_url ? 
+                                    `<img src="${chain.logo_url}" alt="${chain.name}" class="w-100 h-100 rounded">` :
+                                    `<i class="bi bi-shop"></i>`
+                                }
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h1 class="mb-2">${chain.name}</h1>
+                            <h4 class="mb-3 opacity-75">${branch.name}</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-geo-alt me-2"></i>
+                                        <span>${branch.address}</span>
+                                    </div>
+                                </div>
+                                ${branch.phone ? `
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-telephone me-2"></i>
+                                        <a href="tel:${branch.phone}" class="text-white">${branch.phone}</a>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-auto">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-cup-hot me-1"></i>${branchData.stats.total_products} Prodotti
+                                    </span>
+                                </div>
+                                <div class="col-auto">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-star-fill me-1"></i>${branchData.stats.average_rating}/5
+                                    </span>
+                                </div>
+                                ${branch.delivery_enabled ? '<div class="col-auto"><span class="badge bg-success">Delivery</span></div>' : ''}
+                                ${branch.takeaway_enabled ? '<div class="col-auto"><span class="badge bg-info">Takeaway</span></div>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('branchHeader').style.display = 'block';
+        }
+
+        function displayReviews() {
+            const reviews = branchData.reviews;
+            
+            document.getElementById('reviewsSection').innerHTML = `
+                <div class="reviews-card">
+                    <h4 class="mb-4">
+                        <i class="bi bi-star-fill text-warning me-2"></i>
+                        Recensioni Clienti
+                        <small class="text-muted">(${reviews.total_reviews} recensioni)</small>
+                    </h4>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="rating-stars me-3">
+                                    ${generateStarRating(reviews.average_rating)}
+                                </div>
+                                <span class="h5 mb-0">${reviews.average_rating}/5</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        ${reviews.recent_reviews.map(review => `
+                            <div class="col-md-6 mb-3">
+                                <div class="review-item">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <strong>${review.customer_name}</strong>
+                                        <small class="text-muted">${formatDate(review.date)}</small>
+                                    </div>
+                                    <div class="rating-stars mb-2">
+                                        ${generateStarRating(review.rating)}
+                                    </div>
+                                    <p class="mb-0">${review.comment}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('reviewsSection').style.display = 'block';
+        }
+
+        function displayMenu() {
+            const menu = branchData.menu;
+            const categories = Object.keys(menu);
+            
+            let menuHtml = '<div class="menu-card card"><div class="card-body p-4">';
+            menuHtml += '<h4 class="mb-4"><i class="bi bi-menu-app me-2"></i>Menu</h4>';
+            
+            categories.forEach(category => {
+                menuHtml += `
+                    <div class="category-header">
+                        <h5 class="mb-0">${category}</h5>
+                    </div>
+                `;
+                
+                menu[category].forEach(product => {
+                    menuHtml += createProductCard(product);
+                });
+            });
+            
+            menuHtml += '</div></div>';
+            
+            document.getElementById('menuSection').innerHTML = menuHtml;
+            document.getElementById('menuSection').style.display = 'block';
+        }
+
+        function createProductCard(product) {
+            const hasCustomizations = product.customization_options && Object.keys(product.customization_options).length > 0;
+            
+            return `
+                <div class="product-card ${!product.is_available ? 'opacity-50' : ''}">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            ${product.image_url ? 
+                                `<img src="${product.image_url}" alt="${product.name}" class="product-image">` :
+                                `<div class="product-image d-flex align-items-center justify-content-center bg-light">
+                                    <i class="bi bi-cup-hot text-muted"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div class="col">
+                            <h6 class="mb-1">${product.name}</h6>
+                            ${product.description ? `<p class="text-muted small mb-2">${product.description}</p>` : ''}
+                            ${product.allergens && product.allergens.length > 0 ? 
+                                `<div class="mb-2">
+                                    ${product.allergens.map(allergen => 
+                                        `<span class="badge bg-warning text-dark me-1">${allergen}</span>`
+                                    ).join('')}
+                                </div>` : ''
+                            }
+                            ${product.preparation_time ? 
+                                `<small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>${product.preparation_time} min
+                                </small>` : ''
+                            }
+                        </div>
+                        <div class="col-auto text-end">
+                            <div class="price-badge mb-2">€${parseFloat(product.price).toFixed(2)}</div>
+                            ${product.is_available ? `
+                                <button class="btn btn-outline-primary btn-sm w-100" 
+                                        onclick="selectProduct(${JSON.stringify(product).replace(/"/g, '&quot;')})">
+                                    ${hasCustomizations ? 'Personalizza' : 'Aggiungi'}
+                                </button>
+                            ` : `
+                                <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                    Non Disponibile
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Product Selection and Customization
+        function selectProduct(product) {
+            currentProduct = { ...product, quantity: 1, customizations: {} };
+            
+            const hasCustomizations = product.customization_options && Object.keys(product.customization_options).length > 0;
+            
+            if (hasCustomizations) {
+                showCustomizationModal(product);
+            } else {
+                // Add directly to cart
+                addToCart(currentProduct);
+            }
+        }
+
+        function showCustomizationModal(product) {
+            const customizations = product.customization_options || {};
+            let modalBody = `
+                <div class="mb-4">
+                    <h6>${product.name}</h6>
+                    <p class="text-muted">${product.description || ''}</p>
+                </div>
+            `;
+            
+            Object.entries(customizations).forEach(([typeKey, typeData]) => {
+                modalBody += `
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            ${typeData.label}
+                            ${typeData.required ? '<span class="text-danger">*</span>' : ''}
+                        </label>
+                        <div class="row g-2">
+                            ${Object.entries(typeData.options).map(([optionKey, optionData]) => `
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" 
+                                               name="${typeKey}" value="${optionKey}" 
+                                               id="${typeKey}_${optionKey}"
+                                               ${typeData.required ? 'required' : ''}
+                                               data-price="${optionData.price || 0}"
+                                               onchange="updateModalPrice()">
+                                        <label class="form-check-label d-flex justify-content-between w-100" for="${typeKey}_${optionKey}">
+                                            <span>${optionData.label}</span>
+                                            ${optionData.price > 0 ? `<span class="text-muted">+€${optionData.price.toFixed(2)}</span>` : ''}
+                                        </label>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('customizationBody').innerHTML = modalBody;
+            document.getElementById('currentQuantity').textContent = '1';
+            updateModalPrice();
+            customizationModal.show();
+        }
+
+        function updateModalQuantity(change) {
+            const quantityEl = document.getElementById('currentQuantity');
+            let quantity = parseInt(quantityEl.textContent) + change;
+            if (quantity < 1) quantity = 1;
+            quantityEl.textContent = quantity;
+            currentProduct.quantity = quantity;
+            updateModalPrice();
+        }
+
+        function updateModalPrice() {
+            if (!currentProduct) return;
+            
+            let totalPrice = parseFloat(currentProduct.price);
+            
+            // Add customization prices
+            const customizationInputs = document.querySelectorAll('#customizationModal input[type="radio"]:checked');
+            customizationInputs.forEach(input => {
+                totalPrice += parseFloat(input.dataset.price || 0);
+            });
+            
+            const quantity = parseInt(document.getElementById('currentQuantity').textContent);
+            const finalPrice = totalPrice * quantity;
+            
+            document.getElementById('modalPrice').textContent = `€${finalPrice.toFixed(2)}`;
+        }
+
+        function addCurrentProductToCart() {
+            // Collect customizations
+            const customizations = {};
+            const customizationInputs = document.querySelectorAll('#customizationModal input[type="radio"]:checked');
+            customizationInputs.forEach(input => {
+                customizations[input.name] = input.value;
+            });
+            
+            currentProduct.customizations = customizations;
+            addToCart(currentProduct);
+            customizationModal.hide();
+        }
+
+        // Cart Management
+        function addToCart(product) {
+            const cartItem = {
+                id: Date.now(), // Simple ID generation
+                product_id: product.id,
+                name: product.name,
+                price: parseFloat(product.price),
+                quantity: product.quantity,
+                customizations: product.customizations || {},
+                customization_price: calculateCustomizationPrice(product)
+            };
+            
+            cart.push(cartItem);
+            updateCartDisplay();
+            updateFloatingCart();
+            
+            // Show success feedback
+            showToast(`${product.name} aggiunto al carrello!`);
+        }
+
+        function calculateCustomizationPrice(product) {
+            let price = 0;
+            const customizations = product.customization_options || {};
+            const selectedCustomizations = product.customizations || {};
+            
+            Object.entries(selectedCustomizations).forEach(([typeKey, optionKey]) => {
+                if (customizations[typeKey] && customizations[typeKey].options[optionKey]) {
+                    price += parseFloat(customizations[typeKey].options[optionKey].price || 0);
+                }
+            });
+            
+            return price;
+        }
+
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.id !== itemId);
+            updateCartDisplay();
+            updateFloatingCart();
+        }
+
+        function updateCartQuantity(itemId, change) {
+            const item = cart.find(item => item.id === itemId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(itemId);
+                } else {
+                    updateCartDisplay();
+                    updateFloatingCart();
+                }
+            }
+        }
+
+        function updateCartDisplay() {
+            const cartItemsEl = document.getElementById('cartItems');
+            const cartSummaryEl = document.getElementById('cartSummary');
+            
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-bag display-4"></i>
+                        <p class="mt-2">Il tuo carrello è vuoto</p>
+                    </div>
+                `;
+                cartSummaryEl.style.display = 'none';
+                return;
+            }
+            
+            let cartHtml = '';
+            let subtotal = 0;
+            
+            cart.forEach(item => {
+                const itemTotal = (item.price + item.customization_price) * item.quantity;
+                subtotal += itemTotal;
+                
+                cartHtml += `
+                    <div class="cart-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-1">${item.name}</h6>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.id})">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                        ${Object.keys(item.customizations).length > 0 ? `
+                            <div class="small text-muted mb-2">
+                                ${Object.entries(item.customizations).map(([type, option]) => 
+                                    `<div>${type}: ${option}</div>`
+                                ).join('')}
+                            </div>
+                        ` : ''}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateCartQuantity(${item.id}, -1)">-</button>
+                                <span class="fw-bold">${item.quantity}</span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateCartQuantity(${item.id}, 1)">+</button>
+                            </div>
+                            <span class="fw-bold">€${itemTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            cartItemsEl.innerHTML = cartHtml;
+            
+            document.getElementById('cartSubtotal').textContent = `€${subtotal.toFixed(2)}`;
+            document.getElementById('cartTotal').textContent = `€${subtotal.toFixed(2)}`;
+            cartSummaryEl.style.display = 'block';
+        }
+
+        function updateFloatingCart() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = totalItems;
+            document.getElementById('floatingCartCount').textContent = totalItems;
+            
+            const floatingBtn = document.getElementById('floatingCartBtn');
+            if (totalItems > 0) {
+                floatingBtn.style.display = 'block';
+            } else {
+                floatingBtn.style.display = 'none';
+            }
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cartSidebar');
+            const overlay = document.getElementById('cartOverlay');
+            
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        function startCheckout() {
+            if (cart.length === 0) return;
+            
+            // Implement Stripe payment integration here
+            alert('Integrazione pagamento Stripe - In sviluppo');
+        }
+
+        // Utility Functions
+        function generateStarRating(rating) {
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 !== 0;
+            let stars = '';
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="bi bi-star-fill"></i>';
+            }
+            
+            if (hasHalfStar) {
+                stars += '<i class="bi bi-star-half"></i>';
+            }
+            
+            const emptyStars = 5 - Math.ceil(rating);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="bi bi-star"></i>';
+            }
+            
+            return stars;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('it-IT');
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+        }
+
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--qorange-primary);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 2000;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</body>
+</html>

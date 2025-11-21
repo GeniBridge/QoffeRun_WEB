@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Configurazione base API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.qofferun.com/api/v1';
+// Configurazione base API con normalizzazione del path /api/v1
+const RAW_API_BASE = import.meta.env.VITE_API_URL || 'https://api.qofferun.com';
+const API_BASE_URL = RAW_API_BASE.endsWith('/api/v1')
+  ? RAW_API_BASE
+  : `${RAW_API_BASE.replace(/\/+$/, '')}/api/v1`;
 
 // Crea istanza axios con configurazione base
 const api = axios.create({
@@ -15,7 +18,7 @@ const api = axios.create({
 // Interceptor per aggiungere automaticamente il token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('qofferun_token');
+    const token = localStorage.getItem('qofferun_token') || localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,7 +42,7 @@ api.interceptors.response.use(
 
 // AUTH API
 export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: (credentials) => api.post('/api/v1/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
@@ -64,6 +67,12 @@ export const branchesAPI = {
   clone: (id, data) => api.post(`/branches/${id}/clone`, data),
   stats: (id) => api.get(`/branches/${id}/stats`),
   updateStatus: (id, status) => api.patch(`/branches/${id}/status`, { status }),
+  // Overview endpoint (baseURL already includes /api/v1)
+  overview: (id) => api.get(`/branches/${id}/overview`),
+  // Orders endpoints
+  orders: (id, params) => api.get(`/branches/${id}/orders`, { params }),
+  orderDetails: (id, orderId) => api.get(`/branches/${id}/orders/${orderId}`),
+  orderStats: (id) => api.get(`/branches/${id}/orders-stats`),
 };
 
 // BRANCH MANAGERS API

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BranchManager;
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\StaffEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -139,6 +140,28 @@ class BranchManagerController extends Controller
 
         $branchManager = BranchManager::create($branchManagerData);
         $branchManager->load(['branch', 'user', 'assignedBy']);
+
+        // Send email notification to the assigned manager
+        try {
+            StaffEmailService::sendBranchAssignmentNotification(
+                $managerUser,
+                $branch,
+                [
+                    'permissions' => $branchManagerData['permissions'] ?? [],
+                    'can_access_reports' => $branchManagerData['can_access_reports'],
+                    'can_manage_staff' => $branchManagerData['can_manage_staff'],
+                    'can_modify_menu' => $branchManagerData['can_modify_menu'],
+                    'max_discount_percentage' => $branchManagerData['max_discount_percentage']
+                ]
+            );
+        } catch (\Exception $emailException) {
+            // Log email error but don't fail the manager assignment
+            \Log::warning('Failed to send branch manager assignment email: ' . $emailException->getMessage(), [
+                'manager_id' => $managerUser->id,
+                'manager_email' => $managerUser->email,
+                'branch_id' => $branch->id
+            ]);
+        }
 
         return response()->json([
             'success' => true,

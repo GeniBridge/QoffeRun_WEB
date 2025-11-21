@@ -8,7 +8,8 @@ const Logo = ({ className = '', width = '180', height = 'auto', alt = 'QoffeRun'
     const fetchLogoPath = async () => {
       try {
         // Prova a recuperare il logo path dalle impostazioni API
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/system-settings/system_logo_path`);
+        const apiBase = import.meta.env.VITE_API_URL || 'https://api.qofferun.com';
+        const response = await fetch(`${apiBase}/api/v1/system-settings/system_logo_path`);
         if (response.ok) {
           const data = await response.json();
           if (data.value) {

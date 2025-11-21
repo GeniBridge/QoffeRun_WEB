@@ -40,14 +40,18 @@ class User extends Authenticatable
         'work_preferences' => 'array',
     ];
 
+    protected $attributes = [
+        'role' => 'customer',
+    ];
+
     // Role Checkers
     public function isAdmin()           { return $this->role === 'admin'; }
     public function isChainOwner()      { return $this->role === 'chain_owner'; }
     public function isBranchManager()   { return $this->role === 'branch_manager'; }
     public function isStaff()           { return $this->role === 'staff'; }
     public function isCustomer()        { return $this->role === 'customer'; }
-    // Legacy - manteniamo per retrocompatibilità
-    public function isBarista()         { return $this->role === 'barista' || $this->role === 'branch_manager'; }
+    // Legacy - manteniamo per retrocompatibilità, esteso per includere chain_owner
+    public function isBarista()         { return $this->role === 'barista' || $this->role === 'branch_manager' || $this->role === 'chain_owner'; }
 
     // Multi-Tenant Relationships
     public function chain()
@@ -70,6 +74,62 @@ class User extends Authenticatable
         return $this->belongsToMany(Branch::class, 'branch_managers')
                     ->withPivot(['status', 'is_primary_manager', 'permissions'])
                     ->wherePivot('status', 'active');
+    }
+
+    /**
+     * Many-to-many relationship with branches (for staff assignments)
+     */
+    public function assignedBranches()
+    {
+        return $this->belongsToMany(Branch::class, 'user_branches')
+                    ->withPivot([
+                        'role_at_branch', 
+                        'is_primary_branch', 
+                        'assigned_at', 
+                        'unassigned_at',
+                        'permissions',
+                        'work_schedule'
+                    ])
+                    ->whereNull('user_branches.unassigned_at');
+    }
+
+    /**
+     * Get primary branch for this user
+     */
+    public function primaryBranch()
+    {
+        return $this->assignedBranches()
+                    ->wherePivot('is_primary_branch', true)
+                    ->first();
+    }
+
+    /**
+     * Check if user can access a specific branch
+     */
+    public function canAccessBranch($branchId): bool
+    {
+        // Admin can access all branches
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Chain owners can access all branches in their chains
+        if ($this->isChainOwner()) {
+            $branch = Branch::find($branchId);
+            return $branch && $this->ownedChains()->where('id', $branch->chain_id)->exists();
+        }
+
+        // Branch managers can access their managed branches
+        if ($this->isBranchManager()) {
+            return $this->managedBranches()->where('branches.id', $branchId)->exists();
+        }
+
+        // Staff can access their assigned branches
+        if ($this->isStaff() || $this->isBranchManager() || $this->isBarista()) {
+            return $this->assignedBranches()->where('branches.id', $branchId)->exists();
+        }
+
+        return false;
     }
 
     // Legacy Relationships

@@ -8,12 +8,23 @@ services:
       dockerfile: Dockerfile
     image: qoffe-run-app
     container_name: qoffe-run-app
+    volumes:
+      - ./src:/var/www/html
+    expose:
+      - "9000"
+    depends_on:
+      - db
+
+  web:
+    image: nginx:alpine
+    container_name: qoffe-run-web
     ports:
       - "8000:80"
     volumes:
-      - ./src:/var/www/html
+      - ./src:/var/www/html:ro
+      - ./nginx-backend.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - db
+      - app
 
   db:
     image: postgres:15

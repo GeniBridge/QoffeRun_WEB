@@ -545,4 +545,49 @@ class BranchController extends Controller
             'data' => $branch
         ]);
     }
+
+    /**
+     * Get branch overview metrics
+     * GET /api/v1/branches/{branchId}/overview
+     */
+    public function overview($branchId): JsonResponse
+    {
+        $branch = Branch::with('chain')->findOrFail($branchId);
+
+        // Calculate metrics
+        $ordersToday = $branch->orders()->whereDate('created_at', today())->count();
+        $averageRating = $branch->reviews()->avg('rating');
+        $monthlyRevenue = $branch->orders()->whereMonth('created_at', now()->month)->sum('total');
+        $ordersThisMonth = $branch->orders()->whereMonth('created_at', now()->month)->count();
+
+        // Eligibility logic
+        $hasMinimumMenuItems = $branch->menus()
+            ->where('is_active', true)
+            ->withCount(['availableItems as available_items_count'])
+            ->get()
+            ->sum('available_items_count') >= 5;
+        $chain = $branch->chain;
+        $chainHasLogoAndCover = !empty($chain?->logo_path) && !empty($chain?->cover_image_path);
+        // Only consider Stripe Connect fields for publish eligibility
+        $stripeConnected = !empty($branch->stripe_connect_account_id) && $branch->stripe_connect_status === 'active';
+        $addressComplete = !empty($branch->address) && !empty($branch->lat) && !empty($branch->lng);
+
+        $eligibleToPublish = [
+            'has_minimum_menu_items' => $hasMinimumMenuItems,
+            'chain_has_logo_and_cover' => $chainHasLogoAndCover,
+            'stripe_connected' => $stripeConnected,
+            'address_complete' => $addressComplete,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'ordini_oggi' => $ordersToday,
+                'rating_medio' => $averageRating,
+                'fatturato_mese' => $monthlyRevenue,
+                'ordini_mese' => $ordersThisMonth,
+                'eligible_to_publish' => $eligibleToPublish,
+            ],
+        ]);
+    }
 }

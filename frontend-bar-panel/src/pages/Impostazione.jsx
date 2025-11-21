@@ -1,13 +1,25 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import BarSettings from '../components/Settings/BarSettings';
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useBranch } from '../context/BranchContext';
+import BarSettings from '../components/Settings/BarSettings.jsx';
 
 export default function Impostazione() {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
+  const { selectedBranch } = useBranch();
 
-  // Assumiamo che l'utente abbia un barId associato
-  // In un sistema reale, questo potrebbe venire dal profilo utente o da un API call
-  const barId = user?.bar_id || 1; // Default per test
+  // Use the selected branch ID from context
+  const barId = selectedBranch?.id || user?.bar_id || null;
+
+  if (!selectedBranch) {
+    return (
+      <div className="page-container">
+        <div className="alert alert-warning">
+          <i className="bi bi-info-circle me-2"></i>
+          Seleziona una filiale per gestire le impostazioni
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container">

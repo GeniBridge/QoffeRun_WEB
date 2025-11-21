@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QoffeRun Ordering System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-header h2 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .result {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .branches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .branch-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+
+        .branch-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
+
+        .branch-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .menu-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .menu-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+
+        .menu-item h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-item p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .customizations {
+            margin: 1rem 0;
+        }
+
+        .customization-group {
+            margin-bottom: 1rem;
+        }
+
+        .customization-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .customization-group select, .customization-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .cart-item {
+            background: white;
+            color: #333;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quantity-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .quantity {
+            min-width: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .guest-id-display {
+            background: #e9ecef;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-family: monospace;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>☕ QoffeRun Ordering System</h1>
+            <p>Complete E-Commerce Testing Interface</p>
+        </div>
+
+        <div class="content">
+            <!-- Guest ID Display -->
+            <div class="guest-id-display">
+                <strong>Guest ID:</strong> <span id="guestId"></span>
+                <button class="btn btn-warning" onclick="generateNewGuestId()" style="margin-left: 1rem; padding: 0.3rem 0.8rem; font-size: 0.8rem;">Generate New ID</button>
+            </div>
+
+            <!-- Step 1: Branch Selection -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🏪 Step 1: Select a Branch</h2>
+                </div>
+                <div class="section-content">
+                    <button class="btn" onclick="loadBranches()">
+                        <span class="loading hidden" id="branchesLoading"></span>
+                        Load Available Branches
+                    </button>
+                    <div id="branchesResult" class="result hidden"></div>
+                    <div id="branchesGrid" class="branches-grid hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 2: Menu Browsing -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 Step 2: Browse Menu</h2>
+                </div>
+                <div class="section-content">
+                    <div id="selectedBranchInfo" class="hidden">
+                        <h3>Selected Branch: <span id="branchName"></span></h3>
+                        <button class="btn" onclick="loadMenu()" id="loadMenuBtn" disabled>
+                            <span class="loading hidden" id="menuLoading"></span>
+                            Load Menu
+                        </button>
+                    </div>
+                    <div id="menuResult" class="result hidden"></div>
+                    <div id="menuItems" class="menu-items hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 3: Shopping Cart -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🛒 Step 3: Shopping Cart</h2>
+                </div>
+                <div class="section-content">
+                    <button class="btn btn-success" onclick="loadCart()">
+                        <span class="loading hidden" id="cartLoading"></span>
+                        Refresh Cart
+                    </button>
+                    <button class="btn btn-danger" onclick="clearCart()">Clear Cart</button>
+                    
+                    <div id="cartResult" class="result hidden"></div>
+                    <div id="cartDisplay" class="hidden">
+                        <div class="cart-summary">
+                            <h3>🛒 Your Cart</h3>
+                            <div id="cartItems"></div>
+                            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid rgba(255,255,255,0.2);">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Subtotal:</span>
+                                    <span id="cartSubtotal">€0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span>Tax (22%):</span>
+                                    <span id="cartTax">€0.00</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
+                                    <span>Total:</span>
+                                    <span id="cartTotal">€0.00</span>
+                                </div>
+                                <div style="text-align: center; margin-top: 1rem;">
+                                    <span id="cartItemCount">0 items</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: API Testing -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>🧪 API Testing & Debug</h2>
+                </div>
+                <div class="section-content">
+                    <button class="btn" onclick="testAllAPIs()">Test All APIs</button>
+                    <button class="btn btn-warning" onclick="showRawResponses = !showRawResponses; alert('Raw responses: ' + (showRawResponses ? 'ON' : 'OFF'))">Toggle Raw Responses</button>
+                    <div id="debugResult" class="result hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'https://api.qofferun.com/api/v1/customer';
+        let selectedBranch = null;
+        let cartData = null;
+        let guestId = generateGuestId();
+        let showRawResponses = false;
+
+        // Initialize
+        document.getElementById('guestId').textContent = guestId;
+
+        function generateGuestId() {
+            return 'test-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function generateNewGuestId() {
+            guestId = generateGuestId();
+            document.getElementById('guestId').textContent = guestId;
+            selectedBranch = null;
+            cartData = null;
+            document.getElementById('branchesGrid').classList.add('hidden');
+            document.getElementById('selectedBranchInfo').classList.add('hidden');
+            document.getElementById('menuItems').classList.add('hidden');
+            document.getElementById('cartDisplay').classList.add('hidden');
+            showResult('debugResult', '🔄 Generated new guest ID. System reset.');
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Guest-ID': guestId,
+                        ...options.headers
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (showRawResponses) {
+                    console.log('API Response:', { url, status: response.status, data });
+                }
+                
+                return { response, data };
+            } catch (error) {
+                console.error('Request failed:', error);
+                return { error };
+            }
+        }
+
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.classList.remove('hidden');
+            element.className = `result ${type}`;
+        }
+
+        function showLoading(elementId, show = true) {
+            const element = document.getElementById(elementId);
+            if (show) {
+                element.classList.remove('hidden');
+            } else {
+                element.classList.add('hidden');
+            }
+        }
+
+        async function loadBranches() {
+            showLoading('branchesLoading', true);
+            
+            const { data, error } = await makeRequest(`${API_BASE}/branches`);
+            
+            showLoading('branchesLoading', false);
+            
+            if (error) {
+                showResult('branchesResult', `❌ Error loading branches: ${error.message}`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                showResult('branchesResult', `✅ Loaded ${data.data.length} branches successfully!`, 'success');
+                displayBranches(data.data);
+            } else {
+                showResult('branchesResult', `❌ Failed to load branches: ${data.message}`, 'error');
+            }
+        }
+
+        function displayBranches(branches) {
+            const grid = document.getElementById('branchesGrid');
+            grid.innerHTML = '';
+            
+            branches.forEach(branch => {
+                const card = document.createElement('div');
+                card.className = 'branch-card';
+                card.onclick = () => selectBranch(branch);
+                
+                const services = Object.entries(branch.services)
+                    .filter(([key, value]) => value)
+                    .map(([key, value]) => key.replace('_', ' '))
+                    .join(', ');
+                
+                card.innerHTML = `
+                    <h3>${branch.name}</h3>
+                    <p><strong>Chain:</strong> ${branch.chain.name}</p>
+                    <p><strong>Address:</strong> ${branch.address}</p>
+                    <p><strong>Phone:</strong> ${branch.phone || 'Not provided'}</p>
+                    <p><strong>Services:</strong> ${services}</p>
+                    <p><strong>Accepting Orders:</strong> 
+                        <span class="status ${branch.accepting_orders ? 'success' : 'error'}">
+                            ${branch.accepting_orders ? '✅ Yes' : '❌ No'}
+                        </span>
+                    </p>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            grid.classList.remove('hidden');
+            grid.classList.add('fade-in');
+        }
+
+        function selectBranch(branch) {
+            selectedBranch = branch;
+            
+            // Update UI
+            document.querySelectorAll('.branch-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.branch-card').classList.add('selected');
+            
+            document.getElementById('branchName').textContent = branch.name;
+            document.getElementById('selectedBranchInfo').classList.remove('hidden');
+            document.getElementById('loadMenuBtn').disabled = false;
+            
+            showResult('branchesResult', `✅ Selected: ${branch.name} (${branch.chain.name})`, 'success');
+        }
+
+        async function loadMenu() {
+            if (!selectedBranch) {
+                showResult('menuResult', '❌ Please select a branch first!', 'error');
+                return;
+            }
+            
+            showLoading('menuLoading', true);
+            
+            const { data, error } = await makeRequest(`${API_BASE}/branches/${selectedBranch.id}/menu`);
+            
+            showLoading('menuLoading', false);
+            
+            if (error) {
+                showResult('menuResult', `❌ Error loading menu: ${error.message}`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                const menuData = data.data;
+                showResult('menuResult', `✅ Loaded menu for ${menuData.branch.name}!`, 'success');
+                displayMenu(menuData.menu);
+            } else {
+                showResult('menuResult', `❌ Failed to load menu: ${data.message}`, 'error');
+            }
+        }
+
+        function displayMenu(menu) {
+            const container = document.getElementById('menuItems');
+            container.innerHTML = '';
+            
+            if (!menu || !menu.categories || menu.categories.length === 0) {
+                container.innerHTML = '<p>No menu items available for this branch.</p>';
+                container.classList.remove('hidden');
+                return;
+            }
+            
+            menu.categories.forEach(category => {
+                category.items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'menu-item';
+                    
+                    let customizationsHTML = '';
+                    if (item.customization_options && Object.keys(item.customization_options).length > 0) {
+                        customizationsHTML = '<div class="customizations">';
+                        
+                        Object.entries(item.customization_options).forEach(([type, config]) => {
+                            customizationsHTML += `
+                                <div class="customization-group">
+                                    <label>${config.label}:</label>
+                                    <select id="custom_${item.id}_${type}">
+                                        ${Object.entries(config.options).map(([key, option]) => 
+                                            `<option value="${key}">${option.label} ${option.price > 0 ? `(+€${option.price.toFixed(2)})` : ''}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                            `;
+                        });
+                        
+                        customizationsHTML += `
+                            <div class="customization-group">
+                                <label>Special Instructions:</label>
+                                <input type="text" id="instructions_${item.id}" placeholder="e.g., Extra hot, no sugar...">
+                            </div>
+                        `;
+                        
+                        customizationsHTML += '</div>';
+                    }
+                    
+                    itemDiv.innerHTML = `
+                        <h4>${item.name}</h4>
+                        <p>${item.description}</p>
+                        <p class="price">€${item.price.toFixed(2)}</p>
+                        ${customizationsHTML}
+                        <div style="margin-top: 1rem;">
+                            <button class="quantity-btn" onclick="changeQuantity('qty_${item.id}', -1)">-</button>
+                            <span class="quantity" id="qty_${item.id}">1</span>
+                            <button class="quantity-btn" onclick="changeQuantity('qty_${item.id}', 1)">+</button>
+                            <button class="btn btn-success" onclick="addToCart(${item.id})" style="margin-left: 1rem;">
+                                Add to Cart
+                            </button>
+                        </div>
+                    `;
+                    
+                    container.appendChild(itemDiv);
+                });
+            });
+            
+            container.classList.remove('hidden');
+            container.classList.add('fade-in');
+        }
+
+        function changeQuantity(elementId, change) {
+            const element = document.getElementById(elementId);
+            let quantity = parseInt(element.textContent) + change;
+            if (quantity < 1) quantity = 1;
+            if (quantity > 10) quantity = 10;
+            element.textContent = quantity;
+        }
+
+        async function addToCart(menuItemId) {
+            if (!selectedBranch) {
+                showResult('cartResult', '❌ Please select a branch first!', 'error');
+                return;
+            }
+            
+            const quantity = parseInt(document.getElementById(`qty_${menuItemId}`).textContent);
+            const customizations = {};
+            const instructions = document.getElementById(`instructions_${menuItemId}`)?.value || '';
+            
+            // Collect customizations
+            document.querySelectorAll(`[id^="custom_${menuItemId}_"]`).forEach(select => {
+                const type = select.id.split('_').pop();
+                customizations[type] = select.value;
+            });
+            
+            const requestBody = {
+                branch_id: selectedBranch.id,
+                menu_item_id: menuItemId,
+                quantity: quantity,
+                customizations: customizations,
+                special_instructions: instructions,
+                guest_id: guestId
+            };
+            
+            const { data, error } = await makeRequest(`${API_BASE}/cart/add`, {
+                method: 'POST',
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (error) {
+                showResult('cartResult', `❌ Error adding to cart: ${error.message}`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                showResult('cartResult', `✅ Item added to cart! Total: €${data.data.cart_summary.total_amount}`, 'success');
+                loadCart(); // Refresh cart display
+            } else {
+                showResult('cartResult', `❌ Failed to add to cart: ${data.message}`, 'error');
+            }
+        }
+
+        async function loadCart() {
+            showLoading('cartLoading', true);
+            
+            const { data, error } = await makeRequest(`${API_BASE}/cart`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ guest_id: guestId })
+            });
+            
+            showLoading('cartLoading', false);
+            
+            if (error) {
+                showResult('cartResult', `❌ Error loading cart: ${error.message}`, 'error');
+                return;
+            }
+
+            if (data.success) {
+                cartData = data.data;
+                showResult('cartResult', `✅ Cart loaded successfully!`, 'success');
+                displayCart(cartData);
+            } else {
+                showResult('cartResult', `❌ ${data.message}`, 'info');
+                document.getElementById('cartDisplay').classList.add('hidden');
+            }
+        }
+
+        function displayCart(cart) {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = '';
+            
+            if (cart.items && cart.items.length > 0) {
+                cart.items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'cart-item';
+                    
+                    let customizationsText = '';
+                    if (item.customizations && item.customizations.length > 0) {
+                        customizationsText = ' • ' + item.customizations.map(c => c.display).join(', ');
+                    }
+                    
+                    itemDiv.innerHTML = `
+                        <div class="cart-item-details">
+                            <strong>${item.menu_item.name}</strong>${customizationsText}
+                            ${item.special_instructions ? `<br><small>Note: ${item.special_instructions}</small>` : ''}
+                            <br><small>€${item.unit_price} × ${item.quantity} = €${item.total_price}</small>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button class="quantity-btn" onclick="updateCartItem(${item.id}, ${item.quantity - 1})">-</button>
+                            <span class="quantity">${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateCartItem(${item.id}, ${item.quantity + 1})">+</button>
+                            <button class="btn btn-danger" onclick="removeCartItem(${item.id})" style="margin-left: 0.5rem; padding: 0.3rem 0.8rem; font-size: 0.8rem;">Remove</button>
+                        </div>
+                    `;
+                    
+                    container.appendChild(itemDiv);
+                });
+            } else {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.8);">Your cart is empty</p>';
+            }
+            
+            // Update summary
+            document.getElementById('cartSubtotal').textContent = `€${cart.summary.subtotal}`;
+            document.getElementById('cartTax').textContent = `€${cart.summary.tax_amount}`;
+            document.getElementById('cartTotal').textContent = `€${cart.summary.total_amount}`;
+            document.getElementById('cartItemCount').textContent = `${cart.summary.item_count} items`;
+            
+            document.getElementById('cartDisplay').classList.remove('hidden');
+        }
+
+        async function updateCartItem(cartItemId, newQuantity) {
+            if (newQuantity <= 0) {
+                removeCartItem(cartItemId);
+                return;
+            }
+            
+            const { data, error } = await makeRequest(`${API_BASE}/cart/items/${cartItemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ 
+                    quantity: newQuantity,
+                    guest_id: guestId 
+                })
+            });
+            
+            if (data && data.success) {
+                loadCart(); // Refresh cart
+            } else {
+                showResult('cartResult', `❌ Failed to update item: ${data?.message || error?.message}`, 'error');
+            }
+        }
+
+        async function removeCartItem(cartItemId) {
+            const { data, error } = await makeRequest(`${API_BASE}/cart/items/${cartItemId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ guest_id: guestId })
+            });
+            
+            if (data && data.success) {
+                showResult('cartResult', '✅ Item removed from cart', 'success');
+                loadCart(); // Refresh cart
+            } else {
+                showResult('cartResult', `❌ Failed to remove item: ${data?.message || error?.message}`, 'error');
+            }
+        }
+
+        async function clearCart() {
+            if (!confirm('Are you sure you want to clear your cart?')) return;
+            
+            const { data, error } = await makeRequest(`${API_BASE}/cart/clear`, {
+                method: 'DELETE',
+                body: JSON.stringify({ guest_id: guestId })
+            });
+            
+            if (data && data.success) {
+                showResult('cartResult', '✅ Cart cleared successfully!', 'success');
+                document.getElementById('cartDisplay').classList.add('hidden');
+            } else {
+                showResult('cartResult', `❌ Failed to clear cart: ${data?.message || error?.message}`, 'error');
+            }
+        }
+
+        async function testAllAPIs() {
+            let results = [];
+            
+            showResult('debugResult', '🔄 Testing all APIs...', 'info');
+            
+            // Test 1: Load branches
+            const branchesTest = await makeRequest(`${API_BASE}/branches`);
+            results.push(`1. Branches API: ${branchesTest.data?.success ? '✅ SUCCESS' : '❌ FAILED'}`);
+            
+            if (branchesTest.data?.success && branchesTest.data.data.length > 0) {
+                const testBranch = branchesTest.data.data[0];
+                
+                // Test 2: Load menu
+                const menuTest = await makeRequest(`${API_BASE}/branches/${testBranch.id}/menu`);
+                results.push(`2. Menu API: ${menuTest.data?.success ? '✅ SUCCESS' : '❌ FAILED'}`);
+                
+                // Test 3: Cart operations
+                const cartGetTest = await makeRequest(`${API_BASE}/cart`, {
+                    method: 'GET',
+                    body: JSON.stringify({ guest_id: guestId })
+                });
+                results.push(`3. Get Cart API: ${cartGetTest.data?.success !== false ? '✅ SUCCESS' : '❌ FAILED'}`);
+            }
+            
+            results.push(`\n📊 Guest ID: ${guestId}`);
+            results.push(`🌐 API Base: ${API_BASE}`);
+            results.push(`🔗 Test completed at: ${new Date().toLocaleTimeString()}`);
+            
+            showResult('debugResult', results.join('\n'), 'info');
+        }
+
+        // Auto-load branches on page load
+        window.onload = function() {
+            setTimeout(() => {
+                loadBranches();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

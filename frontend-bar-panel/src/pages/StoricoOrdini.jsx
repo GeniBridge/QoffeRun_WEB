@@ -1,28 +1,80 @@
-import React, { useMemo, useState } from 'react'
-import { HISTORY_ORDERS, PRODUCTS } from '../data/demo'
+import React, { useMemo, useState, useEffect } from 'react'
+import orderService from '../services/orderService'
+import { useBranch } from '../context/BranchContext'
 
 const badge = (s)=>{
-  const map = { 'Ritirato':'bg-primary', 'Annullato':'bg-danger' }
+  const map = { 
+    'pending':'bg-warning', 
+    'confirmed':'bg-info', 
+    'ready':'bg-primary', 
+    'completed':'bg-success', 
+    'cancelled':'bg-danger' 
+  }
+  const labels = {
+    'pending': 'In Attesa',
+    'confirmed': 'Confermato',
+    'ready': 'Pronto',
+    'completed': 'Completato',
+    'cancelled': 'Annullato'
+  }
   const cls = map[s] || 'bg-secondary'
-  return <span className={`badge ${cls}`}>{s}</span>
+  const label = labels[s] || s
+  return <span className={`badge ${cls}`}>{label}</span>
 }
 
 export default function StoricoOrdini(){
+  const { selectedBranch } = useBranch();
   const [q,setQ] = useState('');
   const [d1,setD1] = useState('');
   const [d2,setD2] = useState('');
   const [stato,setStato] = useState('Tutti');
   const [sel,setSel] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Load orders from API
+  useEffect(() => {
+    if (selectedBranch) {
+      loadOrders();
+    }
+  }, [selectedBranch]);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await orderService.getBranchOrders(selectedBranch.id);
+      setOrders(response.data || []);
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to load orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await orderService.updateOrderStatus(selectedBranch.id, orderId, newStatus);
+      // Reload orders to get updated data
+      loadOrders();
+    } catch (err) {
+      setError(`Errore nell'aggiornamento ordine: ${err.message}`);
+    }
+  };
 
   const list = useMemo(()=>{
-    return HISTORY_ORDERS.filter(o=>{
-      const qok = (''+o.id).includes(q) || o.customer.toLowerCase().includes(q.toLowerCase());
-      const dok1 = !d1 || o.date >= d1;
-      const dok2 = !d2 || o.date <= d2 + ' 23:59';
+    return orders.filter(o=>{
+      // Only show completed and cancelled orders in history
+      const statusOk = ['completed', 'cancelled'].includes(o.status);
+      const qok = (''+o.id).includes(q) || o.customer_name?.toLowerCase().includes(q.toLowerCase());
+      const dok1 = !d1 || o.created_at >= d1;
+      const dok2 = !d2 || o.created_at <= d2 + ' 23:59';
       const sok = stato==='Tutti' || o.status===stato;
-      return qok && dok1 && dok2 && sok;
+      return statusOk && qok && dok1 && dok2 && sok;
     })
-  },[q,d1,d2,stato])
+  },[orders,q,d1,d2,stato])
 
   return (
     <section>
@@ -33,25 +85,71 @@ export default function StoricoOrdini(){
         <div className="dropdown">
           <button className="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">{stato}</button>
           <div className="dropdown-menu">
-            {['Tutti','Ritirato','Annullato'].map(s=> <button key={s} className="dropdown-item" onClick={()=>setStato(s)}>{s}</button>)}
+            {['Tutti','completed','cancelled'].map(s=> <button key={s} className="dropdown-item" onClick={()=>setStato(s)}>{s}</button>)}
           </div>
         </div>
+        <button className="btn btn-primary" onClick={loadOrders} disabled={loading}>
+          <i className="bi bi-arrow-clockwise me-2"></i>
+          {loading ? 'Caricando...' : 'Aggiorna'}
+        </button>
       </div>
+
+      {error && (
+        <div className="alert alert-danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          Errore nel caricamento ordini: {error}
+        </div>
+      )}
+
+      {!selectedBranch && (
+        <div className="alert alert-warning">
+          <i className="bi bi-info-circle me-2"></i>
+          Seleziona una filiale per vedere gli ordini
+        </div>
+      )}
 
       <div className="table-responsive bg-white rounded-4 border">
         <table className="table align-middle mb-0">
-          <thead><tr><th>#Ordine</th><th>Cliente</th><th>Data</th><th>Totale</th><th>Stato</th><th></th></tr></thead>
+          <thead><tr><th>#Ordine</th><th>Cliente</th><th>Data</th><th>Totale</th><th>Stato</th><th>Codice Ritiro</th><th></th></tr></thead>
           <tbody>
-            {list.map(o=> (
-              <tr key={o.id}>
-                <td>{o.id}</td>
-                <td>{o.customer}</td>
-                <td>{o.date}</td>
-                <td>€{o.total.toFixed(2)}</td>
-                <td>{badge(o.status)}</td>
-                <td className="text-end"><button className="btn btn-outline-primary btn-sm" onClick={()=>setSel(o)}>Dettagli</button></td>
+            {loading ? (
+              <tr>
+                <td colSpan="7" className="text-center py-4">
+                  <div className="spinner-border" role="status">
+                    <span className="visually-hidden">Caricamento...</span>
+                  </div>
+                </td>
               </tr>
-            ))}
+            ) : list.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="text-center py-4 text-muted">
+                  {orders.length === 0 ? 'Nessun ordine trovato' : 'Nessun ordine corrisponde ai filtri'}
+                </td>
+              </tr>
+            ) : (
+              list.map(o=> (
+                <tr key={o.id}>
+                  <td>#{o.order_number || o.id}</td>
+                  <td>{o.customer_name || 'N/A'}</td>
+                  <td>{new Date(o.created_at).toLocaleDateString('it-IT')}</td>
+                  <td>€{parseFloat(o.total_amount || o.total || 0).toFixed(2)}</td>
+                  <td>{badge(o.status)}</td>
+                  <td><strong>{o.code_4digit}</strong></td>
+                  <td className="text-end">
+                    <button className="btn btn-outline-primary btn-sm me-2" onClick={()=>setSel(o)}>
+                      Dettagli
+                    </button>
+                    <button 
+                      className="btn btn-success btn-sm" 
+                      onClick={() => updateOrderStatus(o.id, 'ready')}
+                      disabled={o.status === 'completed' || o.status === 'cancelled'}
+                    >
+                      Pronto
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

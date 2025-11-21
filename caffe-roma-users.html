@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caffè Roma - Test Users Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .user-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        .user-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .role-badge {
+            font-size: 0.875rem;
+        }
+        .login-button {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-bold text-primary">☕ Caffè Roma</h1>
+                    <p class="lead text-muted">Test Users & Login Access</p>
+                    <small class="text-muted">Default password for all users: <code>password123</code></small>
+                </div>
+
+                <!-- Chain Owner -->
+                <div class="mb-5">
+                    <h2 class="h4 mb-3"><i class="bi bi-building"></i> Chain Owner</h2>
+                    <div class="user-card bg-primary bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Marco Rossi</h5>
+                                <p class="mb-1 text-muted">marco.rossi@cafferoma.it</p>
+                                <span class="badge bg-primary role-badge">Chain Owner</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary login-button" onclick="loginUser('marco.rossi@cafferoma.it', 'chain-owner')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login as Chain Owner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Managers -->
+                <div class="mb-5">
+                    <h2 class="h4 mb-3"><i class="bi bi-people"></i> Branch Managers</h2>
+                    
+                    <div class="user-card bg-success bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Giulia Bianchi</h5>
+                                <p class="mb-1 text-muted">giulia.bianchi@cafferoma.it</p>
+                                <small class="text-muted">Branch: Via del Corso | Employee: MGR-016</small><br>
+                                <span class="badge bg-success role-badge">Branch Manager</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-success login-button" onclick="loginUser('giulia.bianchi@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-card bg-success bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Alessandro Verdi</h5>
+                                <p class="mb-1 text-muted">alessandro.verdi@cafferoma.it</p>
+                                <small class="text-muted">Branch: Trastevere | Employee: MGR-017</small><br>
+                                <span class="badge bg-success role-badge">Branch Manager</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-success login-button" onclick="loginUser('alessandro.verdi@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-card bg-success bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Francesca Neri</h5>
+                                <p class="mb-1 text-muted">francesca.neri@cafferoma.it</p>
+                                <small class="text-muted">Branch: Termini | Employee: MGR-018</small><br>
+                                <span class="badge bg-success role-badge">Branch Manager</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-success login-button" onclick="loginUser('francesca.neri@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Baristas -->
+                <div class="mb-5">
+                    <h2 class="h4 mb-3"><i class="bi bi-cup-hot"></i> Baristas</h2>
+                    
+                    <!-- Via del Corso Baristas -->
+                    <h5 class="mb-3 text-muted">Via del Corso Branch</h5>
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Luca Ferrari</h5>
+                                <p class="mb-1 text-muted">luca.ferrari@cafferoma.it</p>
+                                <small class="text-muted">Branch: Via del Corso | Employee: BAR-016-Lu</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('luca.ferrari@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Sofia Romano</h5>
+                                <p class="mb-1 text-muted">sofia.romano@cafferoma.it</p>
+                                <small class="text-muted">Branch: Via del Corso | Employee: BAR-016-So</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('sofia.romano@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trastevere Baristas -->
+                    <h5 class="mb-3 text-muted mt-4">Trastevere Branch</h5>
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Andrea Colombo</h5>
+                                <p class="mb-1 text-muted">andrea.colombo@cafferoma.it</p>
+                                <small class="text-muted">Branch: Trastevere | Employee: BAR-017-An</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('andrea.colombo@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Elena Ricci</h5>
+                                <p class="mb-1 text-muted">elena.ricci@cafferoma.it</p>
+                                <small class="text-muted">Branch: Trastevere | Employee: BAR-017-El</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('elena.ricci@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Termini Baristas -->
+                    <h5 class="mb-3 text-muted mt-4">Termini Branch</h5>
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Matteo Conti</h5>
+                                <p class="mb-1 text-muted">matteo.conti@cafferoma.it</p>
+                                <small class="text-muted">Branch: Termini | Employee: BAR-018-Ma</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('matteo.conti@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-card bg-warning bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">Chiara Marino</h5>
+                                <p class="mb-1 text-muted">chiara.marino@cafferoma.it</p>
+                                <small class="text-muted">Branch: Termini | Employee: BAR-018-Ch</small><br>
+                                <span class="badge bg-warning role-badge">Barista</span>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-warning login-button" onclick="loginUser('chiara.marino@cafferoma.it', 'bar')">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Bar Panel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-link-45deg"></i> Quick Links</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <a href="https://qofferun.com/login-chain-owner" class="btn btn-outline-primary w-100 mb-2" target="_blank">
+                                    <i class="bi bi-building"></i> Chain Owner Login
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="https://bar.qofferun.com" class="btn btn-outline-success w-100 mb-2" target="_blank">
+                                    <i class="bi bi-cup-hot"></i> Bar Panel (Staff)
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="branch-discovery.html" class="btn btn-outline-info w-100 mb-2">
+                                    <i class="bi bi-geo-alt"></i> Public Branch Discovery
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mt-4 text-center">
+                    <small class="text-muted">
+                        <strong>Note:</strong> All users share the password <code>password123</code><br>
+                        Test the complete system: Branch discovery → Menu browsing → Customization → Cart → Checkout
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loginUser(email, platform) {
+            // Copy email to clipboard for easy pasting
+            navigator.clipboard.writeText(email).then(function() {
+                // Open the appropriate login page
+                let url;
+                if (platform === 'chain-owner') {
+                    url = 'https://qofferun.com/login-chain-owner';
+                } else if (platform === 'bar') {
+                    url = 'https://bar.qofferun.com';
+                } else {
+                    url = 'https://portal.qofferun.com';
+                }
+                
+                // Show a brief notification
+                const button = event.target.closest('button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="bi bi-check"></i> Email Copied!';
+                button.classList.add('disabled');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('disabled');
+                    // Open the login page
+                    window.open(url, '_blank');
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -45,6 +45,8 @@ class Chain extends Model
         'pec_email',
         'website',
         'logo_path',
+        'brand_logo_path',
+        'cover_image_path',
         'stripe_account_id',
         'payment_mode',
         'commission_rate',
@@ -89,5 +91,27 @@ class Chain extends Model
     public function updateBranchCount(): void
     {
         $this->update(['total_branches' => $this->branches()->count()]);
+    }
+
+    /**
+     * Accessor for logo_path (backward compatibility)
+     * Returns brand_logo_path if available, falls back to legacy logo_path
+     */
+    public function getLogoPathAttribute($value)
+    {
+        // If brand_logo_path exists, use it (new format)
+        if ($this->attributes['brand_logo_path'] ?? null) {
+            return $this->attributes['brand_logo_path'];
+        }
+        // Otherwise return the legacy logo_path value
+        return $value;
+    }
+
+    /**
+     * Accessor for cover_image_path to ensure it's in the correct format
+     */
+    public function getCoverImagePathAttribute($value)
+    {
+        return $value;
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Bar;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Chain;
+use App\Models\Branch;
 use App\Services\BarEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -247,6 +249,62 @@ class BarAuthController extends Controller
                     'address' => $user->bar->address,
                 ] : null,
             ],
+        ]);
+    }
+
+    /**
+     * Get branches available to the authenticated user based on their role
+     */
+    public function getUserBranches(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->isBarista() && !$user->isChainOwner()) {
+            return response()->json([
+                'error' => 'Accesso non autorizzato per il pannello bar.',
+            ], 403);
+        }
+
+        $branches = [];
+
+        if ($user->isChainOwner()) {
+            // Chain owners can access all branches of their chains
+            $branches = collect();
+            foreach ($user->ownedChains as $chain) {
+                $chainBranches = $chain->branches()->with('chain')->get()->map(function ($branch) {
+                    return [
+                        'id' => $branch->id,
+                        'name' => $branch->name,
+                        'address' => $branch->address,
+                        'status' => $branch->status,
+                        'chain' => [
+                            'id' => $branch->chain->id,
+                            'name' => $branch->chain->name,
+                            'logo' => $branch->chain->logo,
+                        ],
+                    ];
+                });
+                $branches = $branches->concat($chainBranches);
+            }
+        } else {
+            // Staff, baristas, and branch managers can only access their assigned branches
+            $branches = $user->assignedBranches()->with('chain')->get()->map(function ($branch) {
+                return [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'address' => $branch->address,
+                    'status' => $branch->status,
+                    'chain' => [
+                        'id' => $branch->chain->id,
+                        'name' => $branch->chain->name,
+                        'logo' => $branch->chain->logo,
+                    ],
+                ];
+            });
+        }
+
+        return response()->json([
+            'branches' => $branches->toArray(),
         ]);
     }
 }

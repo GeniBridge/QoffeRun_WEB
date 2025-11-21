@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Models\Branch;
+use App\Services\StaffEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -189,6 +190,27 @@ class ScheduleController extends Controller
         ]);
 
         $schedule->load(['staff', 'branch']);
+
+        // Send shift assignment notification
+        try {
+            $shiftData = [
+                'shift_type' => $shiftType,
+                'date' => $date,
+                'start_time' => $times[0],
+                'end_time' => $times[1],
+                'branch_name' => $branch->name,
+                'notes' => $request->input('notes', '')
+            ];
+            
+            StaffEmailService::sendShiftAssignmentNotification($staff, $branch, $shiftData);
+        } catch (\Exception $emailException) {
+            // Log email error but don't fail the shift assignment
+            \Log::warning('Failed to send shift assignment email: ' . $emailException->getMessage(), [
+                'staff_id' => $staffId,
+                'branch_id' => $branchId,
+                'shift_date' => $date
+            ]);
+        }
 
         return response()->json([
             'success' => true,

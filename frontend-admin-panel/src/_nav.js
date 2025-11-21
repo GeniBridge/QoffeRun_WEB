@@ -42,6 +42,12 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: '🏢 Staff Multi-Filiale',
+    to: '/staff-multi-branch',
+    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
     name: '💳 Transazioni',
     to: '/transazioni',
     icon: <CIcon icon={cilCreditCard} customClassName="nav-icon" />,

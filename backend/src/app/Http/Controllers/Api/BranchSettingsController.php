@@ -87,6 +87,23 @@ class BranchSettingsController extends Controller
             ]
         );
 
+        // If updating hours_*, refresh consolidated opening_hours
+        if (str_starts_with($key, 'hours_')) {
+            $days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+            $hours = [];
+            $settingsMap = $branch->settings()->where('key', 'like', 'hours_%')->get()->keyBy('key');
+            foreach ($days as $day) {
+                $val = $settingsMap['hours_'.$day]->typed_value ?? null;
+                $hours[$day] = [
+                    'open' => $val['open'] ?? ($day === 'saturday' || $day === 'sunday' ? '09:00' : '08:00'),
+                    'close' => $val['close'] ?? ($day === 'saturday' || $day === 'sunday' ? '19:00' : '20:00'),
+                    'closed' => (bool)($val['closed'] ?? false),
+                ];
+            }
+            $branch->opening_hours = $hours;
+            $branch->save();
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Impostazione aggiornata con successo',
@@ -144,6 +161,27 @@ class BranchSettingsController extends Controller
                 'value' => $setting->value,
                 'type' => $setting->type
             ];
+        }
+
+        // If hours_* were updated, also update consolidated opening_hours on branch
+        $hadHoursUpdates = collect($request->settings)->contains(function ($item) {
+            return isset($item['key']) && str_starts_with($item['key'], 'hours_');
+        });
+
+        if ($hadHoursUpdates) {
+            $days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+            $hours = [];
+            $settingsMap = $branch->settings()->where('key', 'like', 'hours_%')->get()->keyBy('key');
+            foreach ($days as $day) {
+                $val = $settingsMap['hours_'.$day]->typed_value ?? null;
+                $hours[$day] = [
+                    'open' => $val['open'] ?? ($day === 'saturday' || $day === 'sunday' ? '09:00' : '08:00'),
+                    'close' => $val['close'] ?? ($day === 'saturday' || $day === 'sunday' ? '19:00' : '20:00'),
+                    'closed' => (bool)($val['closed'] ?? false),
+                ];
+            }
+            $branch->opening_hours = $hours;
+            $branch->save();
         }
 
         return response()->json([
@@ -438,6 +476,11 @@ class BranchSettingsController extends Controller
         
         if ($user->role === 'branch_manager') {
             return $branch->managers()->where('user_id', $user->id)->exists();
+        }
+        
+        // Allow barista/staff to access settings of branches in their assigned chain
+        if ($user->role === 'barista' || $user->role === 'staff') {
+            return $user->chain_id && $branch->chain_id === $user->chain_id;
         }
         
         return false;

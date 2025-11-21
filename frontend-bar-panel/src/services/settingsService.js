@@ -51,7 +51,20 @@ class SettingsService {
       }
       
       const response = await this.apiRequest(endpoint);
-      return response.data;
+      const data = response?.data ?? [];
+
+      // Normalize: backend returns grouped object {category: [...settings]}
+      // Convert to flat array with category on each item
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      const normalized = Object.entries(data).flatMap(([cat, arr]) => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map(item => ({ ...item, category: item.category || cat }));
+      });
+
+      return normalized;
     } catch (error) {
       console.error('Get system settings error:', error);
       throw error;
@@ -73,7 +86,7 @@ class SettingsService {
   // BAR SETTINGS (Full CRUD for Bar)
   // =====================================
 
-  // Get all bar settings
+  // Get all bar settings (legacy - use getBranchSettings instead)
   async getBarSettings(barId, category = null) {
     try {
       let endpoint = `/bars/${barId}/settings`;
@@ -83,6 +96,37 @@ class SettingsService {
       
       const response = await this.apiRequest(endpoint);
       return response.data;
+    } catch (error) {
+      console.error('Get bar settings error:', error);
+      throw error;
+    }
+  }
+
+  // Get all branch settings
+  async getBranchSettings(branchId, category = null) {
+    try {
+      let endpoint = `/branches/${branchId}/settings`;
+      if (category) {
+        endpoint += `?category=${encodeURIComponent(category)}`;
+      }
+      
+      const response = await this.apiRequest(endpoint);
+      const data = response?.data ?? {};
+
+      // Normalize: backend returns key-value object
+      // Convert to array with inferred category
+      const normalized = Object.entries(data).map(([key, obj]) => {
+        const valueObj = obj || {};
+        return {
+          key,
+          value: valueObj.value,
+          type: valueObj.type,
+          updated_at: valueObj.updated_at,
+          category: this.inferCategoryFromKey(key)
+        };
+      });
+
+      return normalized;
     } catch (error) {
       console.error('Get bar settings error:', error);
       throw error;
@@ -172,17 +216,18 @@ class SettingsService {
   // UTILITY METHODS
   // =====================================
 
-  // Get settings by category (system + bar combined)
-  async getAllSettings(barId, category = null) {
+  // Get settings by category (system + branch combined)
+  async getAllSettings(branchId, category = null) {
     try {
-      const [systemSettings, barSettings] = await Promise.all([
+      const [systemSettings, branchSettings] = await Promise.all([
         this.getSystemSettings(category),
-        this.getBarSettings(barId, category)
+        this.getBranchSettings(branchId, category).catch(() => null) // Fallback if branch settings fail
       ]);
 
       return {
-        system: systemSettings,
-        bar: barSettings
+        system: Array.isArray(systemSettings) ? systemSettings : [],
+        branch: Array.isArray(branchSettings) ? branchSettings : [],
+        bar: Array.isArray(branchSettings) ? branchSettings : [] // Legacy compatibility
       };
     } catch (error) {
       console.error('Get all settings error:', error);
@@ -203,6 +248,17 @@ class SettingsService {
       console.error('Update bar settings object error:', error);
       throw error;
     }
+  }
+
+  // Heuristic category inference for branch setting keys
+  inferCategoryFromKey(key) {
+    if (!key || typeof key !== 'string') return 'general';
+    if (key.startsWith('hours_')) return 'operations';
+    if (key.startsWith('stripe_')) return 'integration';
+    if (key.startsWith('fiscal_')) return 'fiscal';
+    if (key.includes('commission')) return 'commissions';
+    if (key.includes('notification')) return 'notifications';
+    return 'general';
   }
 }
 

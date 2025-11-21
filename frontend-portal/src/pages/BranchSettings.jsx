@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 
 const TabButton = ({ active, onClick, children, icon }) => (
   <button
@@ -39,6 +39,7 @@ const Card = ({ title, children, className = "" }) => (
 export default function BranchSettings() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState('fiscal')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -63,10 +64,13 @@ export default function BranchSettings() {
   
   const [stripeData, setStripeData] = useState({
     account_id: '',
-    onboarding_completed: false,
+    stripe_user_id: '',
+    access_token: '',
+    refresh_token: '',
     charges_enabled: false,
     payouts_enabled: false,
-    commission_rate: 3.5
+    details_submitted: false,
+    default_currency: 'eur'
   })
   
   const [openingHours, setOpeningHours] = useState({
@@ -85,6 +89,17 @@ export default function BranchSettings() {
     { id: 'hours', label: 'Orari', icon: '🕒' },
     { id: 'invoices', label: 'Fatturazione', icon: '📄' },
   ]
+
+  // Initialize tab from query string if present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const t = params.get('tab')
+    const valid = tabs.map(x => x.id)
+    if (t && valid.includes(t)) {
+      setActiveTab(t)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     loadBranchData()
@@ -265,7 +280,6 @@ export default function BranchSettings() {
 
       if (response.ok) {
         setSuccess('Impostazioni Stripe salvate con successo!')
-        loadStripeData()
       } else {
         const errorData = await response.json()
         setError(errorData.message || 'Errore nel salvataggio')
@@ -556,130 +570,316 @@ export default function BranchSettings() {
     </div>
   )
 
-  const renderStripeTab = () => (
-    <div className="space-y-6">
-      {/* Status Card */}
-      <Card title="Stato Configurazione">
-        <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${
-              stripeData.onboarding_completed ? 'bg-green-500' : 'bg-yellow-500'
-            }`} />
-            <div>
-              <p className="font-medium text-neutral-900">
-                {stripeData.onboarding_completed ? 'Account Configurato' : 'Configurazione Richiesta'}
-              </p>
-              <p className="text-sm text-neutral-600">
-                {stripeData.onboarding_completed 
-                  ? 'Pagamenti attivi e funzionanti' 
-                  : 'Completa la configurazione per accettare pagamenti'
-                }
-              </p>
-            </div>
-          </div>
-          {!stripeData.onboarding_completed && (
-            <button
-              onClick={handleStripeOnboarding}
-              disabled={loading || !stripeData.account_id}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              Avvia Setup
-            </button>
-          )}
-        </div>
-      </Card>
+  // Stripe tab extracted as its own component so Hooks are used at component top-level
+  const StripeTab = ({ currentChainId }) => {
+    const [stripeAccount, setStripeAccount] = useState(null)
+    const [connectLoading, setConnectLoading] = useState(false)
+    const [stripeChainBranches, setStripeChainBranches] = useState([])
+    const [stripeLoading, setStripeLoading] = useState(false)
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Account Configuration */}
-        <Card title="Configurazione Account">
-          <div className="space-y-4">
-            <Field label="Account ID Stripe" required>
-              <input
-                type="text"
-                value={stripeData.account_id}
-                onChange={(e) => setStripeData({...stripeData, account_id: e.target.value})}
-                placeholder="acct_1234567890"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-qorange-500 focus:border-transparent"
-              />
-            </Field>
+    // Carica stato Stripe Connect
+    useEffect(() => {
+      loadStripeConnectStatus()
+      loadStripeChainBranches()
+    }, [])
 
-            <Field label="Commissione (%)" description="Commissione applicata sui pagamenti">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
-                value={stripeData.commission_rate}
-                onChange={(e) => setStripeData({...stripeData, commission_rate: parseFloat(e.target.value)})}
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-qorange-500 focus:border-transparent"
-              />
-            </Field>
+    const loadStripeConnectStatus = async () => {
+      try {
+        setStripeLoading(true)
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`https://api.qofferun.com/api/v1/branches/${id}/stripe-account`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
 
-            <div className="pt-4 border-t">
-              <h4 className="font-medium text-neutral-900 mb-2">Capacità Account</h4>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    stripeData.charges_enabled ? 'bg-green-500' : 'bg-red-500'
-                  }`} />
-                  <span className="text-sm">
-                    Addebiti: {stripeData.charges_enabled ? 'Abilitati' : 'Disabilitati'}
-                  </span>
+        if (response.ok) {
+          const data = await response.json()
+          setStripeAccount(data.account)
+        }
+      } catch (err) {
+        console.error('Errore caricamento Stripe Connect:', err)
+      } finally {
+        setStripeLoading(false)
+      }
+    }
+
+    const loadStripeChainBranches = async () => {
+      try {
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`https://api.qofferun.com/api/v1/branches`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Filtra solo le filiali della stessa catena, escludendo quella corrente
+          const samechainBranches = (data.data || []).filter(b => 
+            currentChainId && b.chain_id === currentChainId && b.id !== parseInt(id)
+          )
+          setStripeChainBranches(samechainBranches)
+        }
+      } catch (err) {
+        console.error('Errore caricamento filiali catena:', err)
+      }
+    }
+
+    const handleStripeConnect = async () => {
+      setConnectLoading(true)
+      try {
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`https://api.qofferun.com/api/v1/branches/${id}/stripe-connect`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.connect_url) {
+            // Reindirizza all'onboarding Stripe
+            window.location.href = data.connect_url
+          }
+        } else {
+          const errorData = await response.json()
+          setError(errorData.error || 'Errore nella creazione del collegamento Stripe')
+        }
+      } catch (err) {
+        setError('Errore: ' + err.message)
+      } finally {
+        setConnectLoading(false)
+      }
+    }
+
+    const handleStripeDisconnect = async () => {
+      if (!confirm('Sei sicuro di voler disconnettere l\'account Stripe?')) return
+      
+      setConnectLoading(true)
+      try {
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch(`https://api.qofferun.com/api/v1/branches/${id}/stripe-disconnect`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        })
+
+        if (response.ok) {
+          setStripeAccount(null)
+          setSuccess('Account Stripe disconnesso con successo')
+          loadStripeConnectStatus()
+        }
+      } catch (err) {
+        setError('Errore disconnessione: ' + err.message)
+      } finally {
+        setConnectLoading(false)
+      }
+    }
+
+    const copyStripeFromBranch = async (sourceBranchId) => {
+      if (!confirm('Sei sicuro di voler copiare la configurazione Stripe da questa filiale?')) return
+      
+      setConnectLoading(true)
+      try {
+        const token = localStorage.getItem('auth_token')
+        
+        // Prima ottieni l'account della filiale sorgente
+        const sourceResponse = await fetch(`https://api.qofferun.com/api/v1/branches/${sourceBranchId}/stripe-account`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        })
+
+        if (sourceResponse.ok) {
+          const sourceData = await sourceResponse.json()
+          if (sourceData.account) {
+            // Poi copia la configurazione alla filiale corrente
+            // Nota: Stripe Connect non permette la copia diretta di account, 
+            // quindi mostriamo un messaggio per creare un nuovo account
+            setError('Per motivi di sicurezza Stripe, ogni filiale deve avere il proprio account. Usa "Collega Nuovo Account".')
+          } else {
+            setError('La filiale sorgente non ha un account Stripe configurato')
+          }
+        }
+      } catch (err) {
+        setError('Errore nella copia: ' + err.message)
+      } finally {
+        setConnectLoading(false)
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Loading State */}
+        {stripeLoading ? (
+          <Card title="Stripe Connect">
+            <div className="space-y-4 animate-pulse">
+              <div className="flex items-center justify-between p-6 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div className="space-y-2">
+                    <div className="h-5 w-48 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-64 bg-gray-200 rounded"></div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    stripeData.payouts_enabled ? 'bg-green-500' : 'bg-red-500'
-                  }`} />
-                  <span className="text-sm">
-                    Pagamenti: {stripeData.payouts_enabled ? 'Abilitati' : 'Disabilitati'}
-                  </span>
+                <div className="h-12 w-32 bg-gray-200 rounded-lg"></div>
+              </div>
+              <div className="text-center py-4 text-gray-500">
+                <div className="inline-flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  Verifica connessione Stripe...
                 </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        ) : (
+          <>
+            {/* Stripe Connect Status */}
+            <Card title="Stripe Connect">
+              <div className="space-y-4">
+                {!stripeAccount ? (
+              // Account non collegato
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">⚠️</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-yellow-800">Account Stripe non configurato</h3>
+                      <p className="text-yellow-700">
+                        Collega un account Stripe per accettare pagamenti e ricevere versamenti automatici.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleStripeConnect}
+                    disabled={connectLoading}
+                    className="px-6 py-3 bg-qorange-500 text-white rounded-lg hover:bg-qorange-600 disabled:opacity-50 transition-colors font-medium"
+                  >
+                    {connectLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Collegando...
+                      </div>
+                    ) : (
+                      '🔗 Collega Nuovo Account'
+                    )}
+                  </button>
+                </div>
 
-        {/* Webhook Configuration */}
-        <Card title="Configurazione Webhook">
-          <div className="space-y-4">
-            <Field label="Endpoint URL" description="URL per ricevere eventi Stripe">
-              <input
-                type="url"
-                value={`https://api.qofferun.com/stripe/webhook/${id}`}
-                readOnly
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg bg-neutral-50 text-neutral-600"
-              />
-            </Field>
-
-            <Field label="Eventi Monitorati">
-              <div className="text-sm text-neutral-600 space-y-1">
-                <div>• payment_intent.succeeded</div>
-                <div>• payment_intent.payment_failed</div>
-                <div>• account.updated</div>
-                <div>• payout.paid</div>
+                {/* Copia da altre filiali */}
+                {stripeChainBranches.length > 0 && (
+                  <Card title="Copia da Altra Filiale">
+                    <p className="text-sm text-neutral-600 mb-4">
+                      <strong>Nota:</strong> Per motivi di sicurezza Stripe, ogni filiale deve avere il proprio account separato. 
+                      Puoi vedere quali filiali hanno già Stripe configurato, ma dovrai creare un nuovo account per questa filiale.
+                    </p>
+                    <div className="space-y-2">
+                      {stripeChainBranches.map(b => (
+                        <div key={b.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                          <div>
+                            <span className="font-medium">{b.name}</span>
+                            <span className="text-sm text-neutral-600 ml-2">({b.city})</span>
+                          </div>
+                          <div className="text-xs text-neutral-500">
+                            Configurazione indipendente richiesta
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </div>
-            </Field>
+            ) : (
+              // Account collegato
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-6 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-2xl">✅</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-green-800">Account Stripe Collegato</h3>
+                      <p className="text-green-700">
+                        ID: {stripeAccount.id} - Pagamenti attivi
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleStripeDisconnect}
+                    disabled={connectLoading}
+                    className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  >
+                    🗑️ Disconnetti
+                  </button>
+                </div>
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700">
-                💡 <strong>Tip:</strong> Configura questo endpoint nel tuo dashboard Stripe per ricevere automaticamente gli aggiornamenti sui pagamenti.
-              </p>
-            </div>
+                {/* Dettagli Account */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card title="Stato Account">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          stripeAccount.charges_enabled ? 'bg-green-500' : 'bg-red-500'
+                        }`} />
+                        <span className="text-sm">
+                          Addebiti: {stripeAccount.charges_enabled ? 'Abilitati' : 'Disabilitati'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          stripeAccount.payouts_enabled ? 'bg-green-500' : 'bg-red-500'
+                        }`} />
+                        <span className="text-sm">
+                          Versamenti: {stripeAccount.payouts_enabled ? 'Abilitati' : 'Disabilitati'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${
+                          stripeAccount.details_submitted ? 'bg-green-500' : 'bg-yellow-500'
+                        }`} />
+                        <span className="text-sm">
+                          Dettagli: {stripeAccount.details_submitted ? 'Completati' : 'In attesa'}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card title="Commissioni">
+                    <div className="space-y-3">
+                      <div className="p-4 bg-neutral-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-neutral-600">Commissione piattaforma:</span>
+                          <span className="font-medium">5%</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm text-neutral-600">Tu ricevi:</span>
+                          <span className="font-medium text-green-600">95%</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-500">
+                        I versamenti vengono automaticamente trasferiti sul tuo conto ogni 2-7 giorni lavorativi.
+                      </p>
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
+          </>
+        )}
       </div>
-
-      <div className="flex gap-3">
-        <button
-          onClick={handleSaveStripeData}
-          disabled={loading}
-          className="px-6 py-2 bg-qorange-500 text-white rounded-lg hover:bg-qorange-600 disabled:opacity-50 transition-colors"
-        >
-          {loading ? 'Salvando...' : 'Salva Impostazioni'}
-        </button>
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderHoursTab = () => {
     const dayNames = {
@@ -936,7 +1136,12 @@ export default function BranchSettings() {
             <TabButton
               key={tab.id}
               active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id)
+                const params = new URLSearchParams(location.search)
+                params.set('tab', tab.id)
+                navigate({ pathname: `/branch/${id}/settings`, search: params.toString() }, { replace: true })
+              }}
               icon={tab.icon}
             >
               {tab.label}
@@ -946,7 +1151,7 @@ export default function BranchSettings() {
 
         {/* Tab Content */}
         {activeTab === 'fiscal' && renderFiscalTab()}
-        {activeTab === 'stripe' && renderStripeTab()}
+  {activeTab === 'stripe' && <StripeTab currentChainId={branch?.chain_id} />}
         {activeTab === 'hours' && renderHoursTab()}
         {activeTab === 'invoices' && renderInvoicesTab()}
       </main>

@@ -39,7 +39,13 @@ class Branch extends Model
         'takeaway_enabled',
         'table_service_enabled',
         'has_separate_billing',
+        // Legacy field (keep for backward compatibility)
         'stripe_account_id',
+        // Stripe Connect fields
+        'stripe_connect_account_id',
+        'stripe_connect_status',
+        'stripe_connect_capabilities',
+        'stripe_connect_verified_at',
         'pos_system',
         'max_daily_orders',
         'seating_capacity',
@@ -98,6 +104,73 @@ class Branch extends Model
     }
 
     /**
+     * Menu and Order relationships for the new ordering system
+     */
+    public function menus(): HasMany
+    {
+        return $this->hasMany(Menu::class);
+    }
+
+    public function activeMenu(): HasMany
+    {
+        return $this->menus()->where('is_active', true);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function todaysOrders(): HasMany
+    {
+        return $this->orders()->whereDate('created_at', today());
+    }
+
+    /**
+     * Many-to-many relationship with users (staff assignments)
+     */
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_branches')
+                    ->withPivot([
+                        'role_at_branch', 
+                        'is_primary_branch', 
+                        'assigned_at', 
+                        'unassigned_at',
+                        'permissions',
+                        'work_schedule'
+                    ]);
+    }
+
+    /**
+     * Get a specific setting value
+     */
+    public function getSetting(string $key, $default = null)
+    {
+        $setting = $this->settings()->where('key', $key)->first();
+        return $setting ? $setting->typed_value : $default;
+    }
+
+    /**
+     * Set a setting value
+     */
+    public function setSetting(string $key, $value, string $type = 'string'): void
+    {
+        BranchSettings::updateOrCreate(
+            ['branch_id' => $this->id, 'key' => $key],
+            ['value' => $value, 'type' => $type]
+        );
+    }
+
+    /**
+     * Delete a setting
+     */
+    public function deleteSetting(string $key): bool
+    {
+        return $this->settings()->where('key', $key)->delete() > 0;
+    }
+
+    /**
      * Accessor per indirizzo completo
      */
     public function getFullAddressAttribute(): string
@@ -110,5 +183,16 @@ class Branch extends Model
         ]);
 
         return implode(', ', $parts);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(\App\Models\Review::class);
+    }
+
+    public function products(): HasMany
+    {
+        // Adjust the model and foreign key if needed
+        return $this->hasMany(\App\Models\Product::class, 'branch_id');
     }
 }

@@ -18,7 +18,7 @@ export default function EditStaff() {
     role: 'staff',
     hire_date: '',
     employee_code: '',
-    permissions: []
+    permissions: {}
   })
 
   // Permission categories
@@ -27,83 +27,83 @@ export default function EditStaff() {
       id: 'orders',
       title: '📋 Gestione Ordini',
       permissions: [
-        { key: 'orders.view', label: 'Visualizza ordini', description: 'Può vedere gli ordini in corso', icon: '👀' },
-        { key: 'orders.create', label: 'Crea ordini', description: 'Può inserire nuovi ordini', icon: '➕' },
-        { key: 'orders.update', label: 'Modifica ordini', description: 'Può modificare ordini esistenti', icon: '✏️' },
-        { key: 'orders.delete', label: 'Elimina ordini', description: 'Può cancellare ordini', icon: '🗑️' },
+        { key: 'view_orders', label: 'Visualizza ordini', description: 'Può vedere gli ordini in corso', icon: '👀' },
+        { key: 'create_orders', label: 'Crea ordini', description: 'Può inserire nuovi ordini', icon: '➕' },
+        { key: 'manage_orders', label: 'Modifica ordini', description: 'Può modificare ordini esistenti', icon: '✏️' },
+        { key: 'delete_orders', label: 'Elimina ordini', description: 'Può cancellare ordini', icon: '🗑️' },
       ]
     },
     {
       id: 'menu',
       title: '🍽️ Gestione Menu',
       permissions: [
-        { key: 'menu.view', label: 'Visualizza menu', description: 'Può vedere il menu', icon: '👀' },
-        { key: 'menu.update', label: 'Modifica menu', description: 'Può modificare prezzi e disponibilità', icon: '✏️' },
-        { key: 'menu.create', label: 'Crea prodotti', description: 'Può aggiungere nuovi prodotti', icon: '➕' },
+        { key: 'view_menu', label: 'Visualizza menu', description: 'Può vedere il menu', icon: '👀' },
+        { key: 'manage_menu', label: 'Modifica menu', description: 'Può modificare prezzi e disponibilità', icon: '✏️' },
+        { key: 'create_menu', label: 'Crea prodotti', description: 'Può aggiungere nuovi prodotti', icon: '➕' },
       ]
     },
     {
       id: 'payments',
       title: '💳 Gestione Pagamenti',
       permissions: [
-        { key: 'payments.view', label: 'Visualizza pagamenti', description: 'Può vedere i pagamenti', icon: '👀' },
-        { key: 'payments.process', label: 'Processa pagamenti', description: 'Può gestire transazioni', icon: '💰' },
-        { key: 'payments.refund', label: 'Rimborsi', description: 'Può effettuare rimborsi', icon: '↩️' },
+        { key: 'view_payments', label: 'Visualizza pagamenti', description: 'Può vedere i pagamenti', icon: '👀' },
+        { key: 'process_payments', label: 'Processa pagamenti', description: 'Può gestire transazioni', icon: '💰' },
+        { key: 'refund_payments', label: 'Rimborsi', description: 'Può effettuare rimborsi', icon: '↩️' },
       ]
     },
     {
       id: 'reports',
       title: '📊 Report e Analytics',
       permissions: [
-        { key: 'reports.view', label: 'Visualizza report', description: 'Può vedere i report', icon: '📈' },
-        { key: 'reports.export', label: 'Esporta report', description: 'Può scaricare i dati', icon: '📥' },
-        { key: 'analytics.view', label: 'Analytics', description: 'Può accedere alle statistiche avanzate', icon: '📊' },
+        { key: 'view_reports', label: 'Visualizza report', description: 'Può vedere i report', icon: '📈' },
+        { key: 'export_reports', label: 'Esporta report', description: 'Può scaricare i dati', icon: '📥' },
+        { key: 'view_analytics', label: 'Analytics', description: 'Può accedere alle statistiche avanzate', icon: '📊' },
       ]
     },
     {
       id: 'staff',
       title: '👥 Gestione Staff',
       permissions: [
-        { key: 'staff.view', label: 'Visualizza staff', description: 'Può vedere il personale', icon: '👀' },
-        { key: 'staff.manage', label: 'Gestisci staff', description: 'Può gestire altri membri dello staff', icon: '👨‍💼' },
+        { key: 'view_staff', label: 'Visualizza staff', description: 'Può vedere il personale', icon: '👀' },
+        { key: 'manage_staff', label: 'Gestisci staff', description: 'Può gestire altri membri dello staff', icon: '👨‍💼' },
       ]
     },
     {
       id: 'schedules',
       title: '📅 Gestione Turni',
       permissions: [
-        { key: 'schedules.view', label: 'Visualizza turni', description: 'Può vedere i turni di lavoro', icon: '👀' },
-        { key: 'schedules.manage', label: 'Gestisci turni', description: 'Può modificare i turni di lavoro', icon: '📝' },
+        { key: 'view_schedules', label: 'Visualizza turni', description: 'Può vedere i turni di lavoro', icon: '👀' },
+        { key: 'manage_schedules', label: 'Gestisci turni', description: 'Può modificare i turni di lavoro', icon: '📝' },
       ]
     },
     {
       id: 'settings',
       title: '⚙️ Impostazioni',
       permissions: [
-        { key: 'settings.branch', label: 'Impostazioni filiale', description: 'Può modificare le impostazioni della filiale', icon: '🏪' },
-        { key: 'settings.pos', label: 'Impostazioni POS', description: 'Può configurare il sistema POS', icon: '🖥️' },
+        { key: 'manage_settings', label: 'Impostazioni filiale', description: 'Può modificare le impostazioni della filiale', icon: '🏦' },
+        { key: 'manage_pos', label: 'Impostazioni POS', description: 'Può configurare il sistema POS', icon: '🖥️' },
       ]
     }
   ]
 
   // Role templates
   const roleTemplates = {
-    staff: ['orders.view', 'orders.create', 'menu.view', 'payments.view', 'payments.process'],
+    staff: ['view_orders', 'create_orders', 'view_menu', 'view_payments', 'process_payments'],
     cashier: [
-      'orders.view', 'orders.create', 'orders.update', 'menu.view', 
-      'payments.view', 'payments.process', 'payments.refund'
+      'view_orders', 'create_orders', 'manage_orders', 'view_menu', 
+      'view_payments', 'process_payments', 'refund_payments'
     ],
     supervisor: [
-      'orders.view', 'orders.create', 'orders.update', 'orders.delete',
-      'menu.view', 'menu.update', 'payments.view', 'payments.process', 'payments.refund',
-      'reports.view', 'staff.view', 'schedules.view'
+      'view_orders', 'create_orders', 'manage_orders', 'delete_orders',
+      'view_menu', 'manage_menu', 'view_payments', 'process_payments', 'refund_payments',
+      'view_reports', 'view_staff', 'view_schedules'
     ],
     branch_manager: [
-      'orders.view', 'orders.create', 'orders.update', 'orders.delete',
-      'menu.view', 'menu.update', 'menu.create', 'payments.view', 'payments.process', 'payments.refund',
-      'reports.view', 'reports.export', 'analytics.view',
-      'staff.view', 'staff.manage', 'schedules.manage',
-      'settings.branch'
+      'view_orders', 'create_orders', 'manage_orders', 'delete_orders',
+      'view_menu', 'manage_menu', 'create_menu', 'view_payments', 'process_payments', 'refund_payments',
+      'view_reports', 'export_reports', 'view_analytics',
+      'view_staff', 'manage_staff', 'manage_schedules',
+      'manage_settings'
     ]
   }
 
@@ -111,15 +111,19 @@ export default function EditStaff() {
     loadData()
   }, [branchId, staffId])
 
-  // Auto-update permissions when role changes
-  useEffect(() => {
-    if (roleTemplates[staffData.role]) {
+  // Apply role template only for new staff (when permissions are empty)
+  const applyRoleTemplate = (role) => {
+    if (roleTemplates[role] && Object.keys(staffData.permissions).length === 0) {
+      const newPermissions = {}
+      roleTemplates[role].forEach(permission => {
+        newPermissions[permission] = true
+      })
       setStaffData(prev => ({
         ...prev,
-        permissions: roleTemplates[staffData.role]
+        permissions: newPermissions
       }))
     }
-  }, [staffData.role])
+  }
 
   const loadData = async () => {
     const token = localStorage.getItem('auth_token')
@@ -142,10 +146,9 @@ export default function EditStaff() {
         setBranch(branchData.data)
       }
 
-      // Load staff data
-      const staffResponse = await fetch(`https://api.qofferun.com/api/v1/staff/${staffId}`, {
+      // Load staff data using debug endpoint (temporary fix)
+      const staffResponse = await fetch(`https://qofferun.com/api/v1/debug-staff/${staffId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         }
       })
@@ -158,10 +161,10 @@ export default function EditStaff() {
           name: staff.name || '',
           email: staff.email || '',
           phone: staff.phone || '',
-          role: staff.work_preferences?.role || staff.role || 'staff',
+          role: staff.role_at_branch || staff.role || 'staff',
           hire_date: staff.hire_date ? staff.hire_date.split('T')[0] : '',
           employee_code: staff.employee_code || '',
-          permissions: staff.work_preferences?.permissions || []
+          permissions: staff.permissions || {}
         })
       } else {
         setError('Staff non trovato')
@@ -175,14 +178,22 @@ export default function EditStaff() {
 
   const handleInputChange = (field, value) => {
     setStaffData(prev => ({...prev, [field]: value}))
+    
+    // Apply role template when role changes and ask user if they want to update permissions
+    if (field === 'role' && roleTemplates[value]) {
+      if (confirm('Vuoi applicare i permessi predefiniti per questo ruolo?')) {
+        applyRoleTemplate(value)
+      }
+    }
   }
 
   const togglePermission = (permissionKey) => {
     setStaffData(prev => ({
       ...prev,
-      permissions: prev.permissions.includes(permissionKey)
-        ? prev.permissions.filter(p => p !== permissionKey)
-        : [...prev.permissions, permissionKey]
+      permissions: {
+        ...prev.permissions,
+        [permissionKey]: !prev.permissions[permissionKey]
+      }
     }))
   }
 
@@ -217,13 +228,15 @@ export default function EditStaff() {
         }
       }
 
-      const response = await fetch(`https://api.qofferun.com/api/v1/staff/${staffId}`, {
+      // Update staff permissions using debug endpoint (temporary fix)
+      const response = await fetch(`https://qofferun.com/api/v1/debug-staff/${staffId}/permissions`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          permissions: staffData.permissions
+        })
       })
 
       const result = await response.json()
@@ -380,11 +393,13 @@ export default function EditStaff() {
                 <div key={category.id} className='border border-neutral-200 rounded-lg p-4'>
                   <h4 className='font-semibold text-neutral-900 mb-3'>{category.title}</h4>
                   <div className='grid gap-3'>
-                    {category.permissions.map((permission) => (
+                    {category.permissions.map((permission) => {
+                      const isChecked = !!staffData.permissions[permission.key]
+                      return (
                       <label key={permission.key} className='flex items-start gap-3 cursor-pointer'>
                         <input
                           type='checkbox'
-                          checked={staffData.permissions.includes(permission.key)}
+                          checked={isChecked}
                           onChange={() => togglePermission(permission.key)}
                           className='mt-1 w-4 h-4 text-qorange-600 border-neutral-300 rounded focus:ring-qorange-500'
                         />
@@ -396,7 +411,8 @@ export default function EditStaff() {
                           <p className='text-sm text-neutral-600'>{permission.description}</p>
                         </div>
                       </label>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))}

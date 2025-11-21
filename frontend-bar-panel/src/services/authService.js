@@ -1,7 +1,7 @@
 // src/services/authService.js
 class AuthService {
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    this.baseURL = import.meta.env.VITE_API_URL || 'https://api.qofferun.com';
     this.apiPrefix = '/api/bar-panel';
   }
 

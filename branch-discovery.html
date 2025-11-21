@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QoffeRun - Scopri i Bar</title>
+    
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --qorange-primary: #ff6b35;
+            --qorange-secondary: #ff8c69;
+            --qorange-light: #fff5f2;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--qorange-light) 0%, #ffffff 100%);
+            min-height: 100vh;
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--qorange-primary) 0%, var(--qorange-secondary) 100%);
+            color: white;
+            padding: 80px 0;
+            margin-bottom: 50px;
+        }
+        
+        .search-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .branch-card {
+            background: white;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .branch-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .chain-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            background: var(--qorange-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--qorange-primary);
+        }
+        
+        .distance-badge {
+            background: var(--qorange-primary);
+            color: white;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .loading .loading-spinner {
+            display: block;
+        }
+        
+        .loading .results-container {
+            display: none;
+        }
+        
+        .btn-primary {
+            background: var(--qorange-primary);
+            border-color: var(--qorange-primary);
+            border-radius: 12px;
+            padding: 10px 20px;
+        }
+        
+        .btn-primary:hover {
+            background: var(--qorange-secondary);
+            border-color: var(--qorange-secondary);
+        }
+        
+        .stats-badge {
+            background: var(--qorange-light);
+            color: var(--qorange-primary);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="https://api.qofferun.com/storage/logos/qofferun-logo.png" alt="QoffeRun" class="me-2">
+                <strong style="color: var(--qorange-primary);">QoffeRun</strong>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="https://bar.qofferun.com">Portal Bar</a>
+                <a class="nav-link" href="https://portal.qofferun.com">Business</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">Scopri i Bar QoffeRun</h1>
+            <p class="lead mb-0">Trova i migliori bar della tua zona e ordina il tuo caffè preferito</p>
+        </div>
+    </section>
+
+    <!-- Search Card -->
+    <div class="container">
+        <div class="search-card">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Cerca per nome o località</label>
+                    <input type="text" id="searchQuery" class="form-control form-control-lg" 
+                           placeholder="Es: Roma, Milano, Bar Centrale...">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Raggio di ricerca</label>
+                    <select id="radiusSelect" class="form-select form-select-lg">
+                        <option value="5">Entro 5 km</option>
+                        <option value="10" selected>Entro 10 km</option>
+                        <option value="25">Entro 25 km</option>
+                        <option value="50">Entro 50 km</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button id="searchBtn" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-search me-2"></i>Cerca
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <button id="locationBtn" class="btn btn-outline-primary">
+                    <i class="bi bi-geo-alt me-2"></i>Usa la mia posizione
+                </button>
+                <button id="showAllBtn" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-list me-2"></i>Mostra tutti i bar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="container mt-5">
+        <!-- Loading -->
+        <div class="loading-spinner">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Caricamento...</span>
+                </div>
+                <p class="mt-3 text-muted">Ricerca in corso...</p>
+            </div>
+        </div>
+
+        <!-- Results Header -->
+        <div class="results-container" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="mb-1">Bar Disponibili</h3>
+                    <p class="text-muted mb-0" id="resultsCount">0 bar trovati</p>
+                </div>
+                <div>
+                    <select id="sortSelect" class="form-select">
+                        <option value="distance">Ordina per distanza</option>
+                        <option value="name">Ordina per nome</option>
+                        <option value="products">Ordina per prodotti</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Branches Grid -->
+            <div id="branchesGrid" class="row g-4">
+                <!-- Branch cards will be inserted here -->
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="text-center py-5" style="display: none;">
+                <i class="bi bi-search display-1 text-muted"></i>
+                <h4 class="mt-3">Nessun bar trovato</h4>
+                <p class="text-muted">Prova a modificare i parametri di ricerca o aumentare il raggio.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const API_BASE = 'https://api.qofferun.com/api/v1/public';
+        let currentLocation = null;
+        let allBranches = [];
+
+        // DOM Elements
+        const searchQuery = document.getElementById('searchQuery');
+        const radiusSelect = document.getElementById('radiusSelect');
+        const searchBtn = document.getElementById('searchBtn');
+        const locationBtn = document.getElementById('locationBtn');
+        const showAllBtn = document.getElementById('showAllBtn');
+        const sortSelect = document.getElementById('sortSelect');
+        const branchesGrid = document.getElementById('branchesGrid');
+        const resultsContainer = document.querySelector('.results-container');
+        const loadingSpinner = document.querySelector('.loading-spinner');
+        const resultsCount = document.getElementById('resultsCount');
+        const noResults = document.getElementById('noResults');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllBranches();
+            
+            // Event listeners
+            searchBtn.addEventListener('click', handleSearch);
+            locationBtn.addEventListener('click', getUserLocation);
+            showAllBtn.addEventListener('click', showAllBranches);
+            sortSelect.addEventListener('change', handleSort);
+            searchQuery.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') handleSearch();
+            });
+        });
+
+        // API Functions
+        async function apiCall(endpoint, params = {}) {
+            const url = new URL(API_BASE + endpoint);
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined) {
+                    url.searchParams.append(key, params[key]);
+                }
+            });
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        }
+
+        async function loadAllBranches() {
+            try {
+                showLoading();
+                const result = await apiCall('/branches');
+                allBranches = result.data || [];
+                displayBranches(allBranches);
+                updateResultsCount(allBranches.length);
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading branches:', error);
+                showError('Errore nel caricamento dei bar. Riprova più tardi.');
+                hideLoading();
+            }
+        }
+
+        async function searchBranches(query, lat = null, lng = null) {
+            try {
+                showLoading();
+                const params = {
+                    query: query,
+                    radius: radiusSelect.value
+                };
+                
+                if (lat && lng) {
+                    params.lat = lat;
+                    params.lng = lng;
+                }
+
+                const result = await apiCall('/branches/search', params);
+                const branches = result.data || [];
+                displayBranches(branches);
+                updateResultsCount(branches.length, query);
+                hideLoading();
+            } catch (error) {
+                console.error('Error searching branches:', error);
+                showError('Errore nella ricerca. Riprova più tardi.');
+                hideLoading();
+            }
+        }
+
+        // Event Handlers
+        function handleSearch() {
+            const query = searchQuery.value.trim();
+            if (!query) {
+                showAllBranches();
+                return;
+            }
+
+            if (currentLocation) {
+                searchBranches(query, currentLocation.lat, currentLocation.lng);
+            } else {
+                searchBranches(query);
+            }
+        }
+
+        function getUserLocation() {
+            if (!navigator.geolocation) {
+                alert('La geolocalizzazione non è supportata dal tuo browser');
+                return;
+            }
+
+            locationBtn.disabled = true;
+            locationBtn.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Rilevamento...';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    locationBtn.innerHTML = '<i class="bi bi-geo-alt-fill me-2"></i>Posizione rilevata';
+                    locationBtn.classList.replace('btn-outline-primary', 'btn-success');
+                    
+                    // Auto-search with location
+                    const query = searchQuery.value.trim();
+                    if (query) {
+                        searchBranches(query, currentLocation.lat, currentLocation.lng);
+                    } else {
+                        searchBranches('', currentLocation.lat, currentLocation.lng);
+                    }
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    alert('Impossibile rilevare la posizione. Verifica i permessi del browser.');
+                    locationBtn.disabled = false;
+                    locationBtn.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Usa la mia posizione';
+                }
+            );
+        }
+
+        function showAllBranches() {
+            searchQuery.value = '';
+            displayBranches(allBranches);
+            updateResultsCount(allBranches.length);
+        }
+
+        function handleSort() {
+            const sortBy = sortSelect.value;
+            const currentBranches = [...document.querySelectorAll('.branch-card')];
+            
+            // Get current displayed data
+            const displayedData = [];
+            document.querySelectorAll('.branch-card').forEach(card => {
+                displayedData.push(JSON.parse(card.dataset.branchData));
+            });
+
+            // Sort data
+            displayedData.sort((a, b) => {
+                switch (sortBy) {
+                    case 'distance':
+                        if (!a.distance && !b.distance) return 0;
+                        if (!a.distance) return 1;
+                        if (!b.distance) return -1;
+                        return a.distance - b.distance;
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'products':
+                        return b.products_count - a.products_count;
+                    default:
+                        return 0;
+                }
+            });
+
+            displayBranches(displayedData);
+        }
+
+        // UI Functions
+        function displayBranches(branches) {
+            branchesGrid.innerHTML = '';
+            
+            if (branches.length === 0) {
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+            
+            branches.forEach(branch => {
+                const card = createBranchCard(branch);
+                branchesGrid.appendChild(card);
+            });
+        }
+
+        function createBranchCard(branch) {
+            const col = document.createElement('div');
+            col.className = 'col-lg-4 col-md-6';
+            
+            col.innerHTML = `
+                <div class="branch-card card h-100" data-branch-data='${JSON.stringify(branch)}'>
+                    <div class="card-body p-4">
+                        <!-- Chain Logo and Info -->
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="chain-logo me-3">
+                                ${branch.chain.logo_url ? 
+                                    `<img src="${branch.chain.logo_url}" alt="${branch.chain.name}" class="w-100 h-100 rounded" style="object-fit: cover;">` :
+                                    `<i class="bi bi-shop"></i>`
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-1 fw-bold">${branch.chain.name}</h5>
+                                <h6 class="text-muted mb-0">${branch.name}</h6>
+                            </div>
+                            ${branch.distance ? 
+                                `<span class="distance-badge">${branch.distance} km</span>` : 
+                                ''
+                            }
+                        </div>
+
+                        <!-- Address -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-geo-alt text-muted me-2 mt-1"></i>
+                                <small class="text-muted">${branch.address}</small>
+                            </div>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="d-flex gap-2 mb-3">
+                            <span class="stats-badge">
+                                <i class="bi bi-cup-hot me-1"></i>${branch.products_count} prodotti
+                            </span>
+                            ${branch.delivery_enabled ? '<span class="stats-badge"><i class="bi bi-truck me-1"></i>Delivery</span>' : ''}
+                            ${branch.takeaway_enabled ? '<span class="stats-badge"><i class="bi bi-bag me-1"></i>Takeaway</span>' : ''}
+                        </div>
+
+                        <!-- Phone -->
+                        ${branch.phone ? `
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-telephone me-1"></i>${branch.phone}
+                                </small>
+                            </div>
+                        ` : ''}
+
+                        <!-- Action Button -->
+                        <button class="btn btn-primary w-100" onclick="viewBranch(${branch.id})">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Visualizza Menu
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return col;
+        }
+
+        function viewBranch(branchId) {
+            // Redirect to branch page
+            window.location.href = `branch.html?id=${branchId}`;
+        }
+
+        function updateResultsCount(count, query = null) {
+            const text = query ? 
+                `${count} bar trovati per "${query}"` : 
+                `${count} bar disponibili`;
+            resultsCount.textContent = text;
+        }
+
+        function showLoading() {
+            document.body.classList.add('loading');
+            loadingSpinner.style.display = 'block';
+            resultsContainer.style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.body.classList.remove('loading');
+            loadingSpinner.style.display = 'none';
+            resultsContainer.style.display = 'block';
+        }
+
+        function showError(message) {
+            branchesGrid.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>${message}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

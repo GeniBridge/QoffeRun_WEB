@@ -9,6 +9,7 @@ const Impostazioni = React.lazy(() => import('./views/pages/Impostazioni.js'))
 
 // Staff Management
 const Staff = React.lazy(() => import('./views/staff/Staff.js'))
+const StaffMultiBranch = React.lazy(() => import('./views/staff/StaffMultiBranchEnhanced.js'))
 
 // Settings
 const LogoSettings = React.lazy(() => import('./views/settings/LogoSettings.js'))
@@ -76,6 +77,7 @@ const routes = [
   { path: '/bar', name: '🏪 Bar', element: Bar },
   { path: '/clienti', name: '👤 Clienti', element: Clienti },
   { path: '/staff', name: '👥 Staff', element: Staff },
+  { path: '/staff-multi-branch', name: '🏢 Staff Multi-Filiale', element: StaffMultiBranch },
   { path: '/transazioni', name: '💳 Transazioni', element: Transazioni },
   { path: '/statistiche', name: '📈 Statistiche', element: Statistiche },
   { path: '/impostazioni', name: '⚙️ Impostazioni', element: Impostazioni },

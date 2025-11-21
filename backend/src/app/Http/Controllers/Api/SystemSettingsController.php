@@ -235,4 +235,17 @@ class SystemSettingsController extends Controller
             'api_key' => $apiKey ? $apiKey->value : null
         ]);
     }
+
+    /**
+     * Ottieni configurazione Stripe pubblica per il frontend
+     */
+    public function stripeConfig(): JsonResponse
+    {
+        $publishableKey = SystemSetting::where('key', 'stripe_publishable_key')
+            ->first();
+
+        return response()->json([
+            'publishable_key' => $publishableKey ? $publishableKey->value : null
+        ]);
+    }
 }

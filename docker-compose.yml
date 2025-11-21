@@ -102,6 +102,7 @@ services:
     container_name: portal-frontend
     volumes:
       - ./frontend-portal/build:/usr/share/nginx/html:ro
+      - ./mobile-expo/build:/srv/qofferun/mobile-expo/build:ro
       - ./nginx-spa.conf:/etc/nginx/conf.d/default.conf:ro
     labels:
       - "traefik.enable=true"

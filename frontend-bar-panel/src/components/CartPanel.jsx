@@ -3,7 +3,7 @@ import { useCart } from '../context/CartContext'
 
 export default function CartPanel(){
   const { cart } = useCart()
-  const [pinAction, setPinAction] = useState(null) // 'confirm' | 'cancel'
+  const [pinAction, setPinAction] = useState(null)
   const pinInput = useRef(null)
   const modalRef = useRef(null)
 
@@ -14,6 +14,7 @@ export default function CartPanel(){
     setTimeout(()=> pinInput.current?.focus(), 200)
     modal.show()
   }
+  
   function submitPin(){
     const pin = pinInput.current?.value || ''
     if(!/^\d{4}$/.test(pin)) return alert('Inserisci un codice a 4 cifre.')
@@ -32,7 +33,7 @@ export default function CartPanel(){
     <>
       <aside className="cart">
         <div className="cart-header d-flex align-items-center justify-content-between">
-          <div className="fw-semibold">Dettagli ordine</div>
+          <div className="fw-semibold">Carrello</div>
           <div className="text-muted small">{cart.count} {cart.count===1?'item':'items'}</div>
         </div>
         <div className="cart-items">

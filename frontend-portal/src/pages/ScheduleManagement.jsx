@@ -81,18 +81,18 @@ export default function ScheduleManagement() {
         setBranch(branchData.data)
       }
 
-      // Load staff
-      const staffResponse = await fetch(`https://api.qofferun.com/api/v1/branches/${branchId}/staff`, {
+      // Load staff using debug endpoint (temporary fix)
+      const staffResponse = await fetch(`https://qofferun.com/api/v1/debug-branch-staff/${branchId}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         }
       })
 
       if (staffResponse.ok) {
         const staffData = await staffResponse.json()
-        // L'API restituisce dati paginati: { success: true, data: { current_page: 1, data: [...] } }
-        setStaff(staffData.data?.data || [])
+        // Support both array and paginated shapes
+        const list = Array.isArray(staffData.data) ? staffData.data : (staffData.data?.data || [])
+        setStaff(list)
       }
 
       // Calculate week dates for schedule loading
@@ -102,9 +102,9 @@ export default function ScheduleManagement() {
       const startDate = currentWeekDates[0].toISOString().split('T')[0]
       const endDate = currentWeekDates[6].toISOString().split('T')[0]
       
-      const schedulesResponse = await fetch(`https://api.qofferun.com/api/v1/branches/${branchId}/schedules?start_date=${startDate}&end_date=${endDate}`, {
+      // Using debug endpoint temporarily
+      const schedulesResponse = await fetch(`https://qofferun.com/api/v1/debug-branch/${branchId}/schedules?start_date=${startDate}&end_date=${endDate}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         }
       })
@@ -158,7 +158,6 @@ export default function ScheduleManagement() {
   }
 
   const handleConfirmAssignment = async (staffId) => {
-    const token = localStorage.getItem('auth_token')
     const { day, shiftId } = selectedAssignment
     
     try {
@@ -169,25 +168,27 @@ export default function ScheduleManagement() {
         branch_id: branchId
       }
 
-      const response = await fetch('https://api.qofferun.com/api/v1/schedules/assign', {
+      // Using debug endpoint temporarily
+      const response = await fetch('https://qofferun.com/api/v1/debug-schedules-assign', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(assignment)
       })
 
       if (response.ok) {
-        // Update local schedules state
+        const result = await response.json()
+        const created = result.data || null
         const dayKey = typeof day === 'string' ? day : day.toISOString().split('T')[0]
         setSchedules(prev => ({
           ...prev,
           [dayKey]: {
             ...prev[dayKey],
             [shiftId]: [...(prev[dayKey]?.[shiftId] || []), { 
-              id: Date.now(), 
+              id: created?.id || Date.now(), 
               staff: staff.find(s => s.id === staffId),
+              staff_name: staff.find(s => s.id === staffId)?.name || 'Unknown',
               shift_id: shiftId,
               date: day
             }]
@@ -203,13 +204,12 @@ export default function ScheduleManagement() {
   }
 
   const handleRemoveAssignment = async (assignmentId) => {
-    const token = localStorage.getItem('auth_token')
     
     try {
-      const response = await fetch(`https://api.qofferun.com/api/v1/schedules/assignments/${assignmentId}`, {
+      // Using debug endpoint temporarily
+      const response = await fetch(`https://qofferun.com/api/v1/debug-schedules-assignments/${assignmentId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         }
       })
@@ -421,7 +421,7 @@ export default function ScheduleManagement() {
                 >
                   <div className='font-medium'>{member.name}</div>
                   <div className='text-sm text-neutral-600'>
-                    {member.work_preferences?.role === 'branch_manager' ? 'Manager' : 'Staff'} • {member.email}
+                    {(member.role === 'branch_manager' || member.work_preferences?.role === 'branch_manager') ? 'Manager' : 'Staff'} • {member.email}
                   </div>
                 </button>
               ))}

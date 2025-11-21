@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Chain;
+use App\Services\StaffEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -205,6 +206,9 @@ class StaffController extends Controller
         }
 
         try {
+            // Store the plain password before hashing
+            $plainPassword = $request->password;
+            
             $staff = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -220,6 +224,36 @@ class StaffController extends Controller
 
             // Aggiorna conteggio staff nelle filiali della catena
             $this->updateChainStaffCount($request->chain_id);
+
+            // Send email notification with credentials
+            // Try to find the specific branch from work_preferences, otherwise use first branch of the chain
+            $branchId = $request->work_preferences['branch_id'] ?? null;
+            $branch = null;
+            
+            if ($branchId) {
+                $branch = Branch::find($branchId);
+            }
+            
+            if (!$branch) {
+                $branch = Branch::where('chain_id', $request->chain_id)->first();
+            }
+            
+            if ($branch) {
+                try {
+                    StaffEmailService::sendCredentialsNotification(
+                        $staff,
+                        $branch,
+                        $plainPassword
+                    );
+                } catch (\Exception $emailException) {
+                    // Log email error but don't fail the staff creation
+                    \Log::warning('Failed to send staff credentials email: ' . $emailException->getMessage(), [
+                        'staff_id' => $staff->id,
+                        'staff_email' => $staff->email,
+                        'branch_id' => $branch->id ?? null
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -475,30 +509,67 @@ class StaffController extends Controller
             }
         }
 
-        // Recupera staff della catena che hanno branch_id nell'work_preferences
-        $query = User::where('role', 'staff')
-                    ->where('chain_id', $branch->chain_id)
-                    ->with(['chain', 'managedBranches']);
+        // Recupera staff assegnato alla filiale tramite pivot user_branches
+        $perPage = intval($request->per_page ?? 15);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 15;
 
-        // Filtra per branch_id nelle work_preferences (PostgreSQL syntax)
-        $query->whereRaw("work_preferences->>'branch_id' = ?", [$branchId]);
+        $query = \DB::table('user_branches')
+            ->join('users', 'users.id', '=', 'user_branches.user_id')
+            ->where('user_branches.branch_id', $branchId)
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                'users.employee_code',
+                'users.created_at',
+                'user_branches.role_at_branch',
+                'user_branches.permissions'
+            );
 
-        // Filtri aggiuntivi dalla richiesta
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('employee_code', 'like', "%{$search}%");
+                $q->where('users.name', 'ILIKE', "%{$search}%")
+                  ->orWhere('users.email', 'ILIKE', "%{$search}%")
+                  ->orWhere('users.employee_code', 'ILIKE', "%{$search}%");
             });
         }
 
-        $staff = $query->orderBy('name')
-                      ->paginate($request->per_page ?? 15);
+        $paginator = $query->orderBy('users.name')
+            ->paginate($perPage);
+
+        // Trasforma permissions da JSON (oggetto) a array di chiavi abilitate
+        $collection = $paginator->getCollection()->transform(function ($row) {
+            $perms = [];
+            if (!empty($row->permissions)) {
+                $decoded = is_string($row->permissions) ? json_decode($row->permissions, true) : $row->permissions;
+                if (is_array($decoded)) {
+                    foreach ($decoded as $key => $val) {
+                        if ($val === true) {
+                            $perms[] = $key;
+                        }
+                    }
+                }
+            }
+            return [
+                'id' => $row->id,
+                'name' => $row->name,
+                'email' => $row->email,
+                'phone' => $row->phone,
+                'employee_code' => $row->employee_code,
+                'created_at' => $row->created_at,
+                'role' => $row->role_at_branch,
+                'permissions' => $perms,
+            ];
+        });
+
+        // Sostituisci la collection trasformata nel paginator
+        $paginator->setCollection($collection);
 
         return response()->json([
             'success' => true,
-            'data' => $staff,
+            'data' => $paginator,
             'branch' => $branch->load('chain')
         ]);
     }

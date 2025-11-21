@@ -18,34 +18,59 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'name' => 'sometimes|nullable|string|max:255',
+            'first_name' => 'sometimes|nullable|string|max:255',
+            'last_name' => 'sometimes|nullable|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:customer,barista,admin,chain_owner,branch_manager,staff',
-            'phone' => 'nullable|string|max:15',
+            'role' => 'sometimes|nullable|in:customer,barista,admin,chain_owner,branch_manager,staff',
+            'phone' => 'sometimes|nullable|string|max:15',
         ]);
 
+        // Build display name from provided fields
+        $name = $request->name;
+        if (!$name) {
+            if ($request->filled('first_name') || $request->filled('last_name')) {
+                $name = trim(($request->first_name ?? '') . ' ' . ($request->last_name ?? ''));
+            }
+        }
+        if (!$name) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dati non validi',
+                'errors' => [ 'name' => ['Il campo nome è obbligatorio (name o first_name + last_name).'] ]
+            ], 422);
+        }
+
         $user = User::create([
-            'name' => $request->name,
+            'name' => $name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
             'phone' => $request->phone,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $payloadUser = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'phone' => $user->phone,
+        ];
+
         return response()->json([
+            // Backwards-compatible fields
             'message' => 'User registered successfully.',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'phone' => $user->phone,
-            ],
+            'user' => $payloadUser,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            // New fields matching mobile docs
+            'success' => true,
+            'data' => [
+                'user' => $payloadUser,
+                'token' => $token,
+            ],
         ], 201);
     }
 
@@ -69,17 +94,26 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $payloadUser = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'phone' => $user->phone,
+        ];
+
         return response()->json([
+            // Backwards-compatible fields
             'message' => 'Login successful.',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'phone' => $user->phone,
-            ],
+            'user' => $payloadUser,
             'access_token' => $token,
             'token_type' => 'Bearer',
+            // New fields matching mobile docs
+            'success' => true,
+            'data' => [
+                'user' => $payloadUser,
+                'token' => $token,
+            ],
         ]);
     }
 

@@ -1,0 +1,18 @@
+# Replace these with your actual Stripe test keys:
+
+# Secret Key (from Stripe Dashboard → API Keys)
+STRIPE_SECRET="sk_test_YOUR_ACTUAL_SECRET_KEY"
+
+# Publishable Key (from Stripe Dashboard → API Keys)  
+STRIPE_PUBLISHABLE="pk_test_YOUR_ACTUAL_PUBLISHABLE_KEY"
+
+# Connect Client ID (from Stripe Dashboard → Connect → Settings)
+STRIPE_CONNECT_ID="ca_YOUR_ACTUAL_CONNECT_CLIENT_ID"
+
+# Then run this command:
+cd /srv/qofferun && docker compose exec backend php artisan tinker --execute="
+\App\Models\SystemSetting::updateOrCreate(['key' => 'stripe_secret_key'], ['value' => '$STRIPE_SECRET', 'category' => 'payment', 'type' => 'string', 'is_public' => false]);
+\App\Models\SystemSetting::updateOrCreate(['key' => 'stripe_publishable_key'], ['value' => '$STRIPE_PUBLISHABLE', 'category' => 'payment', 'type' => 'string', 'is_public' => true]);
+\App\Models\SystemSetting::updateOrCreate(['key' => 'stripe_connect_client_id'], ['value' => '$STRIPE_CONNECT_ID', 'category' => 'payment', 'type' => 'string', 'is_public' => false]);
+echo 'Stripe keys updated!';
+"
