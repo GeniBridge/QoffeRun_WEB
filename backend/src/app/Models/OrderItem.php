@@ -11,7 +11,13 @@ class OrderItem extends Model
         'order_id',
         'menu_item_id',
         'quantity',
-        'price_at_time'
+        'price_at_time',
+        'customizations',
+        'special_instructions'
+    ];
+
+    protected $casts = [
+        'customizations' => 'array'
     ];
 
     public function order(): BelongsTo

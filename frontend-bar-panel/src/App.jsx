@@ -10,6 +10,7 @@ import Pagamenti from './pages/Pagamenti';
 import Menu from './pages/Menu';
 import QRCodePage from './pages/QRCode';
 import Impostazione from './pages/Impostazione';
+import Profilo from './pages/Profilo';
 
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -77,21 +78,29 @@ function Header({ onLogout, user }) {
               <button className="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
                 <i className="bi bi-person-circle me-2"></i>{user?.name || user?.email || 'User'}
               </button>
-              <div className="dropdown-menu dropdown-menu-end">
-                <button className="dropdown-item" type="button">
-                  <i className="bi bi-person me-2"></i>Il Mio Profilo
-                </button>
-                <button className="dropdown-item" type="button" onClick={switchBranch}>
-                  <i className="bi bi-arrow-repeat me-2"></i>Cambia Filiale
-                </button>
-                <button className="dropdown-item" type="button">
-                  <i className="bi bi-gear me-2"></i>Impostazioni
-                </button>
-                <div className="dropdown-divider"></div>
-                <button className="dropdown-item text-danger" type="button" onClick={onLogout}>
-                  <i className="bi bi-box-arrow-left me-2"></i>Logout
-                </button>
-              </div>
+              <ul className="dropdown-menu dropdown-menu-end">
+                <li>
+                  <NavLink className="dropdown-item" to="/profilo">
+                    <i className="bi bi-person me-2"></i>Il Mio Profilo
+                  </NavLink>
+                </li>
+                <li>
+                  <button className="dropdown-item" type="button" onClick={switchBranch}>
+                    <i className="bi bi-arrow-repeat me-2"></i>Cambia Filiale
+                  </button>
+                </li>
+                <li>
+                  <NavLink className="dropdown-item" to="/impostazione">
+                    <i className="bi bi-gear me-2"></i>Impostazioni
+                  </NavLink>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button className="dropdown-item text-danger" type="button" onClick={onLogout}>
+                    <i className="bi bi-box-arrow-left me-2"></i>Logout
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -137,7 +146,7 @@ function AppContent() {
     );
   }
 
-  const hideRightRoutes = ['/storico-ordini', '/pagamenti', '/menu', '/qrcode', '/impostazione'];
+  const hideRightRoutes = ['/storico-ordini', '/pagamenti', '/menu', '/qrcode', '/impostazione', '/profilo'];
   const hideRight = hideRightRoutes.includes(pathname);
 
   return (
@@ -165,6 +174,7 @@ function AppContent() {
                   <Route path="/menu" element={<Menu />} />
                   <Route path="/qrcode" element={<QRCodePage />} />
                   <Route path="/impostazione" element={<Impostazione />} />
+                                    <Route path="/profilo" element={<Profilo />} />
                   {/* fallback */}
                   <Route path="*" element={<Dashboard />} />
                 </Routes>

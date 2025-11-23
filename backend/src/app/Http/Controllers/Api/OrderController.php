@@ -39,12 +39,10 @@ class OrderController extends Controller
     public function create(Request $request): JsonResponse
     {
         $request->validate([
-            'guest_id' => 'required|string',
-            'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255', 
+            'customer_name' => 'nullable|string|max:255',
+            'customer_email' => 'nullable|email|max:255', 
             'customer_phone' => 'nullable|string|max:50',
-            // If omitted and user is authenticated, server will use default saved card
-            'payment_method_id' => 'nullable|string', // Stripe payment method ID
+            'payment_method_id' => 'required|string', // Stripe payment method ID - REQUIRED
             'notes' => 'nullable|string|max:1000'
         ]);
 
@@ -52,9 +50,19 @@ class OrderController extends Controller
             // Initialize Stripe API
             $this->initializeStripe();
             
-            // If payment_method_id not provided and user is authenticated, use default saved card
-            if (empty($request->payment_method_id) && $request->user()) {
-                $defaultCard = CustomerPaymentMethod::where('user_id', $request->user()->id)
+            // Require authentication for order creation
+            if (!$request->user()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required. Please login or register to place an order.'
+                ], 401);
+            }
+
+            $user = $request->user();
+
+            // If payment_method_id not provided, try to use default saved card
+            if (empty($request->payment_method_id)) {
+                $defaultCard = CustomerPaymentMethod::where('user_id', $user->id)
                     ->where('is_default', true)
                     ->valid()
                     ->first();
@@ -62,7 +70,7 @@ class OrderController extends Controller
                 if (!$defaultCard) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No default payment method found. Please add a card or pass payment_method_id.'
+                        'message' => 'No payment method found. Please add a card first.'
                     ], 422);
                 }
 
@@ -70,25 +78,33 @@ class OrderController extends Controller
                 $request->merge(['payment_method_id' => $defaultCard->getAttribute('stripe_payment_method_id')]);
             }
             
-            // At this point payment_method_id must be present
-            if (empty($request->payment_method_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'payment_method_id is required for guest orders'
-                ], 422);
+            // Auto-sync stripe_customer_id if missing but user has payment methods
+            if (!$user->stripe_customer_id) {
+                $this->initializeStripe();
+                try {
+                    $pmId = $request->payment_method_id;
+                    $pm = \Stripe\PaymentMethod::retrieve($pmId);
+                    if ($pm->customer) {
+                        $user->update(['stripe_customer_id' => $pm->customer]);
+                        $user->refresh();
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to sync stripe_customer_id', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+                }
             }
             
             DB::beginTransaction();
 
-            // Get cart with items
-            $cart = Cart::where('session_id', $request->guest_id)
+            // Get cart with items for authenticated user
+            $cart = Cart::where('user_id', $user->id)
+                       ->where('status', 'active')
                        ->where('expires_at', '>', now())
                        ->first();
 
             if (!$cart) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cart not found or expired'
+                    'message' => 'Cart is empty or expired. Please add items to your cart before placing an order.'
                 ], 404);
             }
 
@@ -103,10 +119,14 @@ class OrderController extends Controller
 
             // Get branch information
             $branch = Branch::with('chain')->find($cart->branch_id);
-            if (!$branch || !$branch->chain->stripe_account_id) {
+            // Determine connected Stripe account: chain-level preferred, else branch connect, else legacy branch account
+            $connectedAccountId = $branch?->chain?->stripe_account_id
+                ?? $branch?->stripe_connect_account_id
+                ?? $branch?->stripe_account_id;
+            if (!$branch || !$connectedAccountId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Branch not configured for payments'
+                    'message' => 'Branch/Chain not configured for payments'
                 ], 400);
             }
 
@@ -117,14 +137,16 @@ class OrderController extends Controller
             $commissionAmount = $this->calculateCommission($totalAmount);
             $branchAmount = $totalAmount - $commissionAmount;
 
-            // Create order
+            // Create order with authenticated user's real information
+            $authenticatedUser = $request->user();
             $order = Order::create([
+                'user_id' => $authenticatedUser->id,
                 'branch_id' => $cart->branch_id,
                 'chain_id' => $branch->chain_id,
-                'customer_name' => $request->customer_name,
-                'customer_email' => $request->customer_email,
-                'customer_phone' => $request->customer_phone,
-                'total' => $totalAmount, // For compatibility with old schema
+                'customer_name' => $authenticatedUser->name ?? $request->customer_name,
+                'customer_email' => $authenticatedUser->email ?? $request->customer_email,
+                'customer_phone' => $authenticatedUser->phone ?? $request->customer_phone,
+                'total' => $totalAmount,
                 'code_4digit' => $this->generatePickupCode(),
                 'subtotal_amount' => $subtotal,
                 'tax_amount' => $taxAmount,
@@ -132,7 +154,7 @@ class OrderController extends Controller
                 'total_amount' => $totalAmount,
                 'currency' => 'eur',
                 'status' => 'pending',
-                'payment_status' => 'paid', // Original migration only allows 'paid' or 'failed'
+                'payment_status' => 'paid',
                 'notes' => $request->notes,
                 'order_number' => $this->generateOrderNumber()
             ]);
@@ -143,7 +165,9 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'menu_item_id' => $cartItem->menu_item_id,
                     'quantity' => $cartItem->quantity,
-                    'price_at_time' => $cartItem->menuItem->price, // Price when order was placed
+                    'price_at_time' => $cartItem->menuItem->price,
+                    'customizations' => $cartItem->customizations,
+                    'special_instructions' => $cartItem->special_instructions
                 ]);
             }
 
@@ -151,7 +175,7 @@ class OrderController extends Controller
             $paymentResult = $this->processStripePayment(
                 $order,
                 $request->payment_method_id,
-                $branch->chain->stripe_account_id,
+                $connectedAccountId,
                 $branchAmount,
                 $commissionAmount
             );
@@ -166,7 +190,7 @@ class OrderController extends Controller
 
             // Update order with payment information
             $order->update([
-                'payment_status' => 'paid', // Original migration only allows 'paid' or 'failed'
+                'payment_status' => 'paid',
                 'status' => 'confirmed',
                 'stripe_payment_intent_id' => $paymentResult['payment_intent_id'],
                 'stripe_transfer_id' => $paymentResult['transfer_id']
@@ -263,15 +287,24 @@ class OrderController extends Controller
                 ];
             }
             
-            // Create Payment Intent with manual capture and application fee (commission)
+            // Get user's Stripe customer ID
+            $user = $order->user;
+            if (!$user || !$user->stripe_customer_id) {
+                return [
+                    'success' => false,
+                    'error' => 'User Stripe customer ID not found. Please add a payment method first.'
+                ];
+            }
+            
+            // Create Payment Intent with automatic capture and application fee (commission)
             $paymentIntent = PaymentIntent::create([
                 'amount' => intval($order->total_amount * 100), // Convert to cents
                 'currency' => $order->currency,
+                'customer' => $user->stripe_customer_id, // Required when using saved payment method
                 'payment_method' => $paymentMethodId,
-                'capture_method' => 'manual', // Manual capture for deferred settlement
-                'confirmation_method' => 'manual',
+                'capture_method' => 'automatic', // Automatic capture for immediate payment
                 'confirm' => true,
-                'return_url' => config('app.url'),
+                'off_session' => true, // Allow charging saved cards without customer present
                 'application_fee_amount' => intval($commissionAmount * 100), // Commission to platform
                 'transfer_data' => [
                     'destination' => $connectedAccountId, // Branch's Stripe account
@@ -585,10 +618,13 @@ class OrderController extends Controller
             DB::beginTransaction();
 
             $branch = Branch::with('chain')->find($request->branch_id);
-            if (!$branch || !$branch->chain->stripe_account_id) {
+            $connectedAccountId = $branch?->chain?->stripe_account_id
+                ?? $branch?->stripe_connect_account_id
+                ?? $branch?->stripe_account_id;
+            if (!$branch || !$connectedAccountId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Branch not configured for payments'
+                    'message' => 'Branch/Chain not configured for payments'
                 ], 400);
             }
 
@@ -632,6 +668,8 @@ class OrderController extends Controller
                     'menu_item_id' => $itemData['menu_item_id'],
                     'quantity' => $itemData['quantity'],
                     'price_at_time' => $menuItem->price,
+                    'customizations' => $itemData['customizations'] ?? null,
+                    'special_instructions' => $itemData['special_instructions'] ?? null
                 ]);
             }
 

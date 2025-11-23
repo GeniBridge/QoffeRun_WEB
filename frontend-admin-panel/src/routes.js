@@ -1,7 +1,8 @@
 import React from 'react'
 
 // === ✅ Import Your Custom Pages (from src/pages/) ===
-const Bar = React.lazy(() => import('./views/pages/Bar.js'))
+const Catene = React.lazy(() => import('./views/pages/Catene.js'))
+const ChainDetails = React.lazy(() => import('./views/pages/ChainDetails.js'))
 const Clienti = React.lazy(() => import('./views/pages/Clienti.js'))
 const Transazioni = React.lazy(() => import('./views/pages/Transazioni.js'))
 const Statistiche = React.lazy(() => import('./views/pages/Statistiche.js'))
@@ -13,6 +14,9 @@ const StaffMultiBranch = React.lazy(() => import('./views/staff/StaffMultiBranch
 
 // Settings
 const LogoSettings = React.lazy(() => import('./views/settings/LogoSettings.js'))
+
+// API Documentation
+const ApiDocs = React.lazy(() => import('./views/api/ApiDocs.js'))
 
 // === 🟡 Existing CoreUI Demo Pages ===
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard.js'))
@@ -74,7 +78,8 @@ const routes = [
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
 
   // --- ✅ Your Custom Pages ---
-  { path: '/bar', name: '🏪 Bar', element: Bar },
+  { path: '/catene', name: '🏢 Catene', element: Catene },
+  { path: '/catene/:id', name: 'Dettagli Catena', element: ChainDetails },
   { path: '/clienti', name: '👤 Clienti', element: Clienti },
   { path: '/staff', name: '👥 Staff', element: Staff },
   { path: '/staff-multi-branch', name: '🏢 Staff Multi-Filiale', element: StaffMultiBranch },
@@ -84,6 +89,9 @@ const routes = [
   
   // --- 🎨 Settings Pages ---
   { path: '/settings/logo', name: 'Logo Settings', element: LogoSettings },
+  
+    // --- 🔌 API Documentation ---
+    { path: '/api-docs', name: 'REST API', element: ApiDocs },
 
   // --- 🟡 CoreUI Demo Pages (remove later if not needed) ---
   { path: '/theme', name: 'Theme', element: Colors, exact: true },

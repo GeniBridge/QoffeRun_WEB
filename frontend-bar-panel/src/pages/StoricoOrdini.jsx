@@ -32,6 +32,8 @@ export default function StoricoOrdini(){
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Load orders from API
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function StoricoOrdini(){
     }
   };
 
-  const list = useMemo(()=>{
+  const filtered = useMemo(()=>{
     return orders.filter(o=>{
       // Only show completed and cancelled orders in history
       const statusOk = ['completed', 'cancelled'].includes(o.status);
@@ -74,7 +76,18 @@ export default function StoricoOrdini(){
       const sok = stato==='Tutti' || o.status===stato;
       return statusOk && qok && dok1 && dok2 && sok;
     })
-  },[orders,q,d1,d2,stato])
+  },[orders,q,d1,d2,stato]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const list = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(startIndex, startIndex + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [q, d1, d2, stato]);
 
   return (
     <section>
@@ -136,15 +149,8 @@ export default function StoricoOrdini(){
                   <td>{badge(o.status)}</td>
                   <td><strong>{o.code_4digit}</strong></td>
                   <td className="text-end">
-                    <button className="btn btn-outline-primary btn-sm me-2" onClick={()=>setSel(o)}>
+                    <button className="btn btn-outline-primary btn-sm" onClick={()=>setSel(o)}>
                       Dettagli
-                    </button>
-                    <button 
-                      className="btn btn-success btn-sm" 
-                      onClick={() => updateOrderStatus(o.id, 'ready')}
-                      disabled={o.status === 'completed' || o.status === 'cancelled'}
-                    >
-                      Pronto
                     </button>
                   </td>
                 </tr>
@@ -154,21 +160,91 @@ export default function StoricoOrdini(){
         </table>
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-between align-items-center mt-3">
+          <div className="text-muted">
+            Pagina {currentPage} di {totalPages} ({filtered.length} risultati totali)
+          </div>
+          <nav>
+            <ul className="pagination mb-0">
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                  <i className="bi bi-chevron-double-left"></i>
+                </button>
+              </li>
+              <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}>
+                  <i className="bi bi-chevron-left"></i>
+                </button>
+              </li>
+              {[...Array(totalPages)].map((_, i) => {
+                const page = i + 1;
+                if (page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2)) {
+                  return (
+                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                      <button className="page-link" onClick={() => setCurrentPage(page)}>
+                        {page}
+                      </button>
+                    </li>
+                  );
+                } else if (page === currentPage - 3 || page === currentPage + 3) {
+                  return <li key={page} className="page-item disabled"><span className="page-link">...</span></li>;
+                }
+                return null;
+              })}
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                  <i className="bi bi-chevron-right"></i>
+                </button>
+              </li>
+              <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                <button className="page-link" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+                  <i className="bi bi-chevron-double-right"></i>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      )}
+
       {/* Modal Dettagli */}
-      <div className="modal fade" id="storicoModal" tabIndex="-1" aria-hidden="true"></div>
       {sel && (
         <div className="modal fade show" style={{display:'block'}}>
-          <div className="modal-dialog">
+          <div className="modal-dialog modal-lg">
             <div className="modal-content">
-              <div className="modal-header"><h5 className="modal-title">Ordine #{sel.id}</h5><button className="btn-close" onClick={()=>setSel(null)}></button></div>
+              <div className="modal-header"><h5 className="modal-title">Ordine #{sel.order_number || sel.id}</h5><button className="btn-close" onClick={()=>setSel(null)}></button></div>
               <div className="modal-body">
-                <div className="mb-2 text-muted">{sel.customer} – {sel.date}</div>
+                <div className="mb-3">
+                  <p className="mb-1"><strong>Cliente:</strong> {sel.customer_name || 'N/A'}</p>
+                  <p className="mb-1"><strong>Email:</strong> {sel.customer_email || 'N/A'}</p>
+                  <p className="mb-1"><strong>Telefono:</strong> {sel.customer_phone || 'N/A'}</p>
+                  <p className="mb-1"><strong>Data:</strong> {new Date(sel.created_at).toLocaleString('it-IT')}</p>
+                  <p className="mb-1"><strong>Codice Ritiro:</strong> <span className="badge bg-primary">{sel.code_4digit}</span></p>
+                  <p className="mb-1"><strong>Stato:</strong> {badge(sel.status)}</p>
+                </div>
+                <h6>Articoli Ordinati:</h6>
                 <ul className="list-group">
-                  {sel.lines.map((ln,idx)=>{
-                    const p = PRODUCTS.find(pp=>pp.id===ln.productId)
-                    return <li key={idx} className="list-group-item d-flex justify-content-between"><span>{p?.name||'Prodotto'} × {ln.qty}</span><span>€{((p?.price||0)*ln.qty).toFixed(2)}</span></li>
-                  })}
+                  {sel.items && sel.items.length > 0 ? (
+                    sel.items.map((item, idx) => (
+                      <li key={idx} className="list-group-item d-flex justify-content-between">
+                        <span>
+                          <strong>{item.menu_item?.name || item.name || 'Prodotto'}</strong>
+                          {item.menu_item?.description && (
+                            <small className="d-block text-muted">{item.menu_item.description}</small>
+                          )}
+                          <span className="text-muted"> × {item.quantity}</span>
+                        </span>
+                        <span>€{(parseFloat(item.price_at_time || item.price || 0) * item.quantity).toFixed(2)}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="list-group-item text-muted">Nessun articolo trovato</li>
+                  )}
                 </ul>
+                <div className="mt-3 text-end">
+                  <h5>Totale: <span className="text-success">€{parseFloat(sel.total_amount || sel.total || 0).toFixed(2)}</span></h5>
+                </div>
               </div>
               <div className="modal-footer"><button className="btn btn-dark" onClick={()=>setSel(null)}>Chiudi</button></div>
             </div>

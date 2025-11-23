@@ -1,14 +1,11 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBranch } from '../context/BranchContext';
-import BarSettings from '../components/Settings/BarSettings.jsx';
+import SimpleSettings from './SimpleSettings';
 
 export default function Impostazione() {
   const { user } = useAuth();
   const { selectedBranch } = useBranch();
-
-  // Use the selected branch ID from context
-  const barId = selectedBranch?.id || user?.bar_id || null;
 
   if (!selectedBranch) {
     return (
@@ -23,7 +20,7 @@ export default function Impostazione() {
 
   return (
     <div className="page-container">
-      <BarSettings barId={barId} />
+      <SimpleSettings />
     </div>
   );
 }

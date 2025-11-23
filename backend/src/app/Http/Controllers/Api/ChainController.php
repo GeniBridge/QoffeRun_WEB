@@ -11,24 +11,41 @@ use Illuminate\Validation\Rule;
 class ChainController extends Controller
 {
     /**
-     * Lista catene del titolare
+     * Lista catene del titolare o tutte per admin
      */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         
-        // Solo chain_owner può vedere le proprie catene
-        if (!$user->isChainOwner()) {
+        // Admin vede tutte le catene, owner vede solo le proprie
+        if ($user->isAdmin()) {
+            $chains = Chain::with(['owner:id,name,email,phone', 'branches'])
+                          ->withCount('branches')
+                          ->orderBy('name')
+                          ->get()
+                          ->map(function($chain) {
+                              return [
+                                  'id' => $chain->id,
+                                  'name' => $chain->name,
+                                  'owner_name' => $chain->owner->name ?? 'N/A',
+                                  'owner_phone' => $chain->owner->phone ?? 'N/A',
+                                  'owner_email' => $chain->owner->email ?? 'N/A',
+                                  'total_branches' => $chain->branches_count,
+                                  'status' => $chain->status,
+                              ];
+                          });
+        } elseif ($user->isChainOwner()) {
+            $chains = Chain::where('owner_id', $user->id)
+                          ->with(['branches'])
+                          ->withCount('branches')
+                          ->orderBy('name')
+                          ->get();
+        } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Accesso negato: solo i proprietari di catena possono accedere'
+                'message' => 'Accesso negato'
             ], 403);
         }
-
-        $chains = Chain::where('owner_id', $user->id)
-                      ->with(['branches'])
-                      ->orderBy('name')
-                      ->get();
 
         return response()->json([
             'success' => true,
@@ -83,7 +100,8 @@ class ChainController extends Controller
     {
         $user = $request->user();
         
-        $chain = Chain::with(['owner', 'branches.activeManagers.user'])
+        $chain = Chain::with(['owner:id,name,email,phone', 'branches'])
+                     ->withCount('branches')
                      ->findOrFail($id);
 
         // Controllo accesso: solo il proprietario o admin
@@ -94,9 +112,23 @@ class ChainController extends Controller
             ], 403);
         }
 
+        $data = [
+            'id' => $chain->id,
+            'name' => $chain->name,
+            'owner_name' => $chain->owner->name ?? 'N/A',
+            'owner_phone' => $chain->owner->phone ?? 'N/A',
+            'owner_email' => $chain->owner->email ?? 'N/A',
+            'total_branches' => $chain->branches_count,
+            'status' => $chain->status,
+            'business_name' => $chain->business_name,
+            'vat_number' => $chain->vat_number,
+            'phone' => $chain->phone,
+            'email' => $chain->email,
+        ];
+
         return response()->json([
             'success' => true,
-            'data' => $chain
+            'data' => $data
         ]);
     }
 

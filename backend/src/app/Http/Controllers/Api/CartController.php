@@ -19,7 +19,39 @@ class CartController extends Controller
     public function getCart(Request $request): JsonResponse
     {
         try {
-            $cart = $this->getOrCreateUserCart($request);
+            $userId = Auth::id();
+            $sessionId = $this->getSessionIdentifier($request);
+
+            // Get existing cart
+            $query = Cart::where('status', 'active');
+            
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->where('session_id', $sessionId);
+            }
+
+            $cart = $query->with(['branch.chain', 'items.menuItem'])->first();
+
+            // Return empty cart if no cart exists
+            if (!$cart) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => null,
+                        'branch' => null,
+                        'items' => [],
+                        'summary' => [
+                            'item_count' => 0,
+                            'subtotal' => '0.00',
+                            'tax_amount' => '0.00',
+                            'total_amount' => '0.00'
+                        ],
+                        'expires_at' => null,
+                        'session_id' => $sessionId
+                    ]
+                ]);
+            }
             
             $cartData = [
                 'id' => $cart->id,
@@ -51,7 +83,8 @@ class CartController extends Controller
                     'tax_amount' => $cart->tax_amount,
                     'total_amount' => $cart->total_amount
                 ],
-                'expires_at' => $cart->expires_at
+                'expires_at' => $cart->expires_at,
+                'session_id' => $cart->session_id
             ];
 
             return response()->json([
@@ -177,7 +210,26 @@ class CartController extends Controller
         }
 
         try {
-            $cart = $this->getOrCreateUserCart($request);
+            $userId = Auth::id();
+            $sessionId = $this->getSessionIdentifier($request);
+
+            // Get existing cart
+            $query = Cart::where('status', 'active');
+            
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->where('session_id', $sessionId);
+            }
+
+            $cart = $query->with(['items'])->first();
+
+            if (!$cart) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cart not found'
+                ], 404);
+            }
             
             if ($cart->updateItemQuantity($cartItemId, $request->quantity)) {
                 return response()->json([
@@ -213,7 +265,26 @@ class CartController extends Controller
     public function removeItem(Request $request, int $cartItemId): JsonResponse
     {
         try {
-            $cart = $this->getOrCreateUserCart($request);
+            $userId = Auth::id();
+            $sessionId = $this->getSessionIdentifier($request);
+
+            // Get existing cart
+            $query = Cart::where('status', 'active');
+            
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->where('session_id', $sessionId);
+            }
+
+            $cart = $query->with(['items'])->first();
+
+            if (!$cart) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cart not found'
+                ], 404);
+            }
             
             if ($cart->removeItem($cartItemId)) {
                 return response()->json([
@@ -249,7 +320,27 @@ class CartController extends Controller
     public function clearCart(Request $request): JsonResponse
     {
         try {
-            $cart = $this->getOrCreateUserCart($request);
+            $userId = Auth::id();
+            $sessionId = $this->getSessionIdentifier($request);
+
+            // Get existing cart
+            $query = Cart::where('status', 'active');
+            
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->where('session_id', $sessionId);
+            }
+
+            $cart = $query->first();
+
+            if (!$cart) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cart is already empty'
+                ]);
+            }
+
             $cart->clear();
 
             return response()->json([
@@ -271,6 +362,11 @@ class CartController extends Controller
      */
     private function getSessionIdentifier(Request $request): string
     {
+        // For authenticated users, use user ID as session identifier
+        if (Auth::check()) {
+            return 'user-' . Auth::id();
+        }
+
         // Try to get session ID from Laravel session
         try {
             $sessionId = $request->session()->getId();
@@ -286,16 +382,22 @@ class CartController extends Controller
             return 'guest-' . $request->guest_id;
         }
 
-        // Try to get from X-Guest-ID header
+        // Try to get from X-Guest-Session header (for mobile apps)
+        $headerGuestSession = $request->header('X-Guest-Session');
+        if ($headerGuestSession) {
+            return $headerGuestSession;
+        }
+
+        // Try to get from X-Guest-ID header (legacy)
         $headerGuestId = $request->header('X-Guest-ID');
         if ($headerGuestId) {
             return 'guest-' . $headerGuestId;
         }
 
-        // Generate a new guest session ID based on IP and user agent
+        // Generate a new guest session ID based on IP and user agent (consistent per session)
         $ip = $request->ip();
         $userAgent = $request->userAgent();
-        return 'guest-' . md5($ip . $userAgent . time());
+        return 'guest-' . md5($ip . $userAgent);
     }
 
     /**

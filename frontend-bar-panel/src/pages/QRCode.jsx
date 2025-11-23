@@ -1,9 +1,12 @@
 import React, { useRef } from 'react'
 import QRCode from 'qrcode.react'
+import { useBranch } from '../context/BranchContext'
 
 export default function QRCodePage(){
-  // Replace this with your bar's unique URL or code
-  const barUrl = window.location.origin + '/menu'
+  const { selectedBranch } = useBranch();
+  // Generate branch-specific menu URL for customer portal
+  const customerPortalUrl = 'https://qofferun.com';
+  const barUrl = selectedBranch ? `${customerPortalUrl}/branches/${selectedBranch.id}/menu` : customerPortalUrl;
   const printRef = useRef()
 
   function handlePrint() {
@@ -21,7 +24,15 @@ export default function QRCodePage(){
 
   return (
     <section>
-      <h5 className="mb-3">QR Code</h5>
+      <h5 className="mb-3">QR Code Menu</h5>
+      
+      {!selectedBranch && (
+        <div className="alert alert-warning">
+          <i className="bi bi-info-circle me-2"></i>
+          Seleziona una filiale per generare il QR code del menu
+        </div>
+      )}
+      
       <div className="p-4 bg-white rounded-4 border d-flex align-items-center justify-content-center" style={{minHeight:320}}>
         <div className="text-center w-100">
           <div ref={printRef}>

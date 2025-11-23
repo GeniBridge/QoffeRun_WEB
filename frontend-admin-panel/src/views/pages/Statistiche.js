@@ -1,235 +1,167 @@
 // src/views/pages/Statistiche.js
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 
 // CoreUI React components
-import { CCard, CCardBody, CCardHeader, CCol, CRow, CWidgetStatsA } from '@coreui/react'
-
-// Chart components
-import { CChartLine, CChartBar, CChartPie } from '@coreui/react-chartjs'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CWidgetStatsA, CSpinner } from '@coreui/react'
 
 // ✅ Correct import for CIcon
 import CIcon from '@coreui/icons-react'
 
 // Icons from @coreui/icons
-import { cilMoney, cilBuilding, cilCreditCard, cilGraph } from '@coreui/icons'
+import { cilMoney, cilBuilding, cilCreditCard, cilGraph, cilUser, cilChart } from '@coreui/icons'
+import adminAuthService from '../../services/adminAuthService'
 
 const Statistiche = () => {
-  // Default: last 30 days
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    total_sales: 0,
+    total_chains: 0,
+    total_customers: 0,
+    total_commission: 0,
+    total_transactions: 0,
+    avg_commission_rate: 0,
   })
 
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState({
-    totalSales: 0,
-    totalBars: 4,
-    totalTransactions: 0,
-    avgCommission: '2.6%',
-    dailySales: [],
-    paymentMethods: [],
-    regionalSales: [],
-  })
-
-  // Simulate API call
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      const days =
-        (new Date(dateRange.endDate) - new Date(dateRange.startDate)) / (1000 * 60 * 60 * 24) + 1
-
-      const dailySales = Array.from({ length: days }, (_, i) => {
-        const date = new Date(dateRange.startDate)
-        date.setDate(date.getDate() + i)
-        return {
-          date: date.toISOString().split('T')[0],
-          amount: 300 + Math.random() * 500,
-        }
-      })
-
-      setData({
-        totalSales: dailySales.reduce((sum, d) => sum + d.amount, 0).toFixed(2),
-        totalBars: 4,
-        totalTransactions: dailySales.length * 12,
-        avgCommission: '2.7%',
-        dailySales,
-        paymentMethods: [
-          { label: 'Stripe', value: 65 },
-          { label: 'PayPal', value: 20 },
-          { label: 'Bonifico', value: 15 },
-        ],
-        regionalSales: [
-          { regione: 'Lombardia', value: 40 },
-          { regione: 'Lazio', value: 25 },
-          { regione: 'Campania', value: 20 },
-          { regione: 'Veneto', value: 15 },
-        ],
-      })
+    const token = adminAuthService.getToken()
+    fetch('https://api.qofferun.com/api/v1/admin/statistics', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        setStats(data.data)
+      }
       setLoading(false)
-    }
-
-    fetchData()
-  }, [dateRange])
+    })
+    .catch(() => setLoading(false))
+  }, [])
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount)
 
-  const chartData = useMemo(() => {
-    return {
-      line: {
-        labels: data.dailySales.map((d) => d.date),
-        datasets: [
-          {
-            label: 'Vendite Giornaliere (€)',
-            backgroundColor: 'rgba(76, 175, 80, 0.2)',
-            borderColor: 'rgba(76, 175, 80, 1)',
-            pointBackgroundColor: 'rgba(76, 175, 80, 1)',
-            data: data.dailySales.map((d) => d.amount),
-          },
-        ],
-      },
-      bar: {
-        labels: data.regionalSales.map((r) => r.regione),
-        datasets: [
-          {
-            label: 'Fatturato per Regione (€)',
-            backgroundColor: '#4CAF50',
-            data: data.regionalSales.map((r) => r.value * 1000),
-          },
-        ],
-      },
-      pie: {
-        labels: data.paymentMethods.map((p) => p.label),
-        datasets: [
-          {
-            backgroundColor: ['#4CAF50', '#2196F3', '#FF9800'],
-            data: data.paymentMethods.map((p) => p.value),
-          },
-        ],
-      },
-    }
-  }, [data])
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <CSpinner color="primary" />
+        <p className="mt-3">Caricamento statistiche...</p>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <h2>📈 Statistiche</h2>
+    <CCard>
+      <CCardHeader>
+        <strong>📈 Statistiche Generali</strong>
+      </CCardHeader>
+      <CCardBody>
+        {/* Key Metrics */}
+        <CRow>
+          <CCol sm={6} lg={3}>
+            <CWidgetStatsA
+              color="success"
+              icon={<CIcon icon={cilMoney} height={36} />}
+              value={formatCurrency(stats.total_sales)}
+              title="Totale Vendite"
+              className="mb-4"
+            />
+          </CCol>
+          <CCol sm={6} lg={3}>
+            <CWidgetStatsA
+              color="info"
+              icon={<CIcon icon={cilBuilding} height={36} />}
+              value={stats.total_chains.toLocaleString()}
+              title="Totale Catene"
+              className="mb-4"
+            />
+          </CCol>
+          <CCol sm={6} lg={3}>
+            <CWidgetStatsA
+              color="primary"
+              icon={<CIcon icon={cilUser} height={36} />}
+              value={stats.total_customers.toLocaleString()}
+              title="Totale Clienti"
+              className="mb-4"
+            />
+          </CCol>
+          <CCol sm={6} lg={3}>
+            <CWidgetStatsA
+              color="warning"
+              icon={<CIcon icon={cilChart} height={36} />}
+              value={formatCurrency(stats.total_commission)}
+              title="Totale Commissioni"
+              className="mb-4"
+            />
+          </CCol>
+        </CRow>
 
-      {/* Date Range Filter (Free version) */}
-      <CCard className="mb-4">
-        <CCardBody>
-          <CRow className="align-items-end">
-            <CCol md={5}>
-              <div className="mb-2">Data Inizio</div>
-              <input
-                type="date"
-                className="form-control"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
-              />
-            </CCol>
-            <CCol md={5}>
-              <div className="mb-2">Data Fine</div>
-              <input
-                type="date"
-                className="form-control"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
-              />
-            </CCol>
-            <CCol md={2} className="text-end">
-              <small className="text-muted d-block">Aggiorna</small>
-            </CCol>
-          </CRow>
-        </CCardBody>
-      </CCard>
+        {/* Additional Stats */}
+        <CRow className="mt-3">
+          <CCol sm={6} lg={6}>
+            <CCard className="text-center">
+              <CCardBody>
+                <CIcon icon={cilCreditCard} height={48} className="text-info mb-3" />
+                <h3 className="mb-2">{stats.total_transactions.toLocaleString()}</h3>
+                <p className="text-muted mb-0">Transazioni Totali</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+          <CCol sm={6} lg={6}>
+            <CCard className="text-center">
+              <CCardBody>
+                <CIcon icon={cilGraph} height={48} className="text-success mb-3" />
+                <h3 className="mb-2">{stats.avg_commission_rate.toFixed(2)}%</h3>
+                <p className="text-muted mb-0">Commissione Media</p>
+              </CCardBody>
+            </CCard>
+          </CCol>
+        </CRow>
 
-      {/* Key Metrics */}
-      <CRow>
-        <CCol sm={6} lg={3}>
-          <CWidgetStatsA
-            color="success"
-            icon={<CIcon icon={cilMoney} height={24} />}
-            value={`€${Number(data.totalSales).toLocaleString()}`}
-            title="Totale Vendite"
-            className="mb-3"
-          />
-        </CCol>
-        <CCol sm={6} lg={3}>
-          <CWidgetStatsA
-            color="info"
-            icon={<CIcon icon={cilBuilding} height={24} />}
-            value={data.totalBars}
-            title="Numero di Bar"
-            className="mb-3"
-          />
-        </CCol>
-        <CCol sm={6} lg={3}>
-          <CWidgetStatsA
-            color="warning"
-            icon={<CIcon icon={cilCreditCard} height={24} />}
-            value={data.totalTransactions.toLocaleString()}
-            title="Transazioni"
-            className="mb-3"
-          />
-        </CCol>
-        <CCol sm={6} lg={3}>
-          <CWidgetStatsA
-            color="primary"
-            icon={<CIcon icon={cilGraph} height={24} />}
-            value={data.avgCommission}
-            title="Commissione Media"
-            className="mb-3"
-          />
-        </CCol>
-      </CRow>
-
-      {/* Charts */}
-      <CRow>
-        <CCol lg={8}>
-          <CCard>
-            <CCardHeader>Vendite Giornaliere</CCardHeader>
-            <CCardBody>
-              <CChartLine
-                data={chartData.line}
-                className="mt-3"
-                style={{ height: '300px' }}
-                loading={loading}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-
-        <CCol lg={4}>
-          <CCard>
-            <CCardHeader>Metodi di Pagamento</CCardHeader>
-            <CCardBody>
-              <CChartPie
-                data={chartData.pie}
-                className="mt-3"
-                style={{ height: '300px' }}
-                loading={loading}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-
-        <CCol lg={12} className="mt-4">
-          <CCard>
-            <CCardHeader>Fatturato per Regione</CCardHeader>
-            <CCardBody>
-              <CChartBar
-                data={chartData.bar}
-                className="mt-3"
-                style={{ height: '300px' }}
-                loading={loading}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-      </CRow>
-    </div>
+        {/* Summary Section */}
+        <CRow className="mt-4">
+          <CCol lg={12}>
+            <CCard>
+              <CCardHeader>
+                <strong>Riepilogo Finanziario</strong>
+              </CCardHeader>
+              <CCardBody>
+                <div className="table-responsive">
+                  <table className="table table-borderless">
+                    <tbody>
+                      <tr>
+                        <td><strong>Vendite Totali:</strong></td>
+                        <td className="text-end text-success h5">{formatCurrency(stats.total_sales)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Commissioni Platform:</strong></td>
+                        <td className="text-end text-warning h5">{formatCurrency(stats.total_commission)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Importo Filiali:</strong></td>
+                        <td className="text-end text-info h5">{formatCurrency(stats.total_sales - stats.total_commission)}</td>
+                      </tr>
+                      <tr className="border-top">
+                        <td><strong>Numero Transazioni:</strong></td>
+                        <td className="text-end h5">{stats.total_transactions.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Valore Medio Ordine:</strong></td>
+                        <td className="text-end h5">
+                          {stats.total_transactions > 0 ? formatCurrency(stats.total_sales / stats.total_transactions) : '€0,00'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CCardBody>
+            </CCard>
+          </CCol>
+        </CRow>
+      </CCardBody>
+    </CCard>
   )
 }
 

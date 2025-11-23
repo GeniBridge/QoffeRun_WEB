@@ -1,8 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Badge, Spinner } from 'react-bootstrap';
+import PinModal from './PinModal';
+import settingsService from '../services/settingsService';
+import { useBranch } from '../context/BranchContext';
 
 const OrderDetailModal = ({ order, show, onHide, onStatusUpdate, loading = false }) => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [pinRequired, setPinRequired] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [pinValue, setPinValue] = useState('');
+  const { selectedBranch } = useBranch();
+
+  useEffect(() => {
+    if (selectedBranch) {
+      checkPinRequired();
+    }
+  }, [selectedBranch]);
+
+  const checkPinRequired = async () => {
+    try {
+      const settings = await settingsService.getBranchSettings(selectedBranch.id);
+      const pinSetting = (settings || []).find(s => s.key === 'status_change_pin');
+      const value = pinSetting?.value || '';
+      setPinRequired(!!value);
+      setPinValue(value);
+    } catch (err) {
+      setPinRequired(false);
+      setPinValue('');
+    }
+  };
 
   if (!order) return null;
 
@@ -69,6 +97,38 @@ const OrderDetailModal = ({ order, show, onHide, onStatusUpdate, loading = false
   };
 
   const handleStatusUpdate = async (newStatus) => {
+    if (pinRequired) {
+      // Show PIN modal
+      setPendingStatus(newStatus);
+      setShowPinModal(true);
+      setPinError('');
+    } else {
+      // No PIN required, proceed directly
+      await executeStatusUpdate(newStatus);
+    }
+  };
+
+  const handlePinConfirm = async (pin) => {
+    setUpdatingStatus(true);
+    setPinError('');
+    
+    try {
+      if (!pinValue || pin !== String(pinValue)) {
+        throw new Error('Invalid PIN');
+      }
+      // PIN correct, proceed with status update
+      await executeStatusUpdate(pendingStatus);
+      
+      // Close PIN modal
+      setShowPinModal(false);
+      setPendingStatus(null);
+    } catch (error) {
+      setPinError('PIN non corretto. Riprova.');
+      setUpdatingStatus(false);
+    }
+  };
+
+  const executeStatusUpdate = async (newStatus) => {
     setUpdatingStatus(true);
     try {
       await onStatusUpdate(order.id, newStatus);
@@ -195,7 +255,22 @@ const OrderDetailModal = ({ order, show, onHide, onStatusUpdate, loading = false
                             <td>
                               <div className="fw-semibold">{item.menu_item?.name || item.name}</div>
                               {item.menu_item?.description && (
-                                <small className="text-muted">{item.menu_item.description}</small>
+                                <small className="text-muted d-block">{item.menu_item.description}</small>
+                              )}
+                              {item.customizations && Object.keys(item.customizations).length > 0 && (
+                                <div className="mt-1">
+                                  {Object.entries(item.customizations).map(([key, value]) => (
+                                    <small key={key} className="badge bg-light text-dark me-1">
+                                      {key}: {value}
+                                    </small>
+                                  ))}
+                                </div>
+                              )}
+                              {item.special_instructions && (
+                                <small className="text-muted fst-italic d-block mt-1">
+                                  <i className="bi bi-chat-left-text me-1"></i>
+                                  {item.special_instructions}
+                                </small>
                               )}
                             </td>
                             <td className="text-center">{item.quantity}</td>
@@ -279,6 +354,28 @@ const OrderDetailModal = ({ order, show, onHide, onStatusUpdate, loading = false
           </Button>
         )}
       </Modal.Footer>
+
+      {/* PIN Verification Modal */}
+      <PinModal
+        show={showPinModal}
+        onHide={() => {
+          setShowPinModal(false);
+          setPendingStatus(null);
+          setPinError('');
+          setUpdatingStatus(false);
+        }}
+        onConfirm={handlePinConfirm}
+        title="Conferma Cambio Stato"
+        loading={updatingStatus}
+      />
+      
+      {pinError && (
+        <div className="position-fixed bottom-0 start-50 translate-middle-x mb-3">
+          <div className="alert alert-danger" role="alert">
+            {pinError}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };

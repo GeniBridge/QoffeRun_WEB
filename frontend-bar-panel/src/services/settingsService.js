@@ -133,6 +133,53 @@ class SettingsService {
     }
   }
 
+  // Get permissions for current user on branch settings
+  async getBranchSettingsPermissions(branchId) {
+    try {
+      const response = await this.apiRequest(`/branches/${branchId}/settings/permissions`);
+      const data = response?.data ?? {};
+      return {
+        can_access: !!data.can_access,
+        can_manage: !!data.can_manage,
+      };
+    } catch (error) {
+      // If forbidden, return explicit false flags
+      if (error && String(error.message).toLowerCase().includes('non autorizzato')) {
+        return { can_access: false, can_manage: false };
+      }
+      console.error('Get branch settings permissions error:', error);
+      throw error;
+    }
+  }
+
+  // Update a specific branch setting (write for branch)
+  async updateBranchSetting(branchId, key, settingData) {
+    try {
+      const response = await this.apiRequest(`/branches/${branchId}/settings/${key}`, {
+        method: 'PUT',
+        body: JSON.stringify(settingData),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update branch setting error:', error);
+      throw error;
+    }
+  }
+
+  // Batch update branch settings
+  async batchUpdateBranchSettings(branchId, settingsArray) {
+    try {
+      const response = await this.apiRequest(`/branches/${branchId}/settings/batch`, {
+        method: 'POST',
+        body: JSON.stringify({ settings: settingsArray }),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Batch update branch settings error:', error);
+      throw error;
+    }
+  }
+
   // Get specific bar setting by key
   async getBarSetting(barId, key) {
     try {

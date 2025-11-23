@@ -29,7 +29,6 @@ class CustomerPaymentMethod extends Model
     ];
 
     protected $hidden = [
-        'stripe_payment_method_id',
         'card_fingerprint',
     ];
 

@@ -13,6 +13,40 @@ use Laravel\Sanctum\PersonalAccessToken;
 class AuthController extends Controller
 {
     /**
+    * @OA\Post(
+    *     path="/api/v1/register",
+    *     summary="Register a new user",
+    *     tags={"Authentication"},
+    *     @OA\RequestBody(
+    *         required=true,
+    *         @OA\JsonContent(
+    *             required={"email","password","password_confirmation"},
+    *             @OA\Property(property="name", type="string", example="John Doe"),
+    *             @OA\Property(property="first_name", type="string", example="John"),
+    *             @OA\Property(property="last_name", type="string", example="Doe"),
+    *             @OA\Property(property="email", type="string", format="email", example="user@example.com"),
+    *             @OA\Property(property="password", type="string", format="password", example="password123"),
+    *             @OA\Property(property="password_confirmation", type="string", format="password", example="password123"),
+    *             @OA\Property(property="phone", type="string", example="+393331234567"),
+    *             @OA\Property(property="role", type="string", enum={"customer","barista","admin","chain_owner","branch_manager","staff"}, example="customer")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=201,
+    *         description="User registered successfully",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="success", type="boolean", example=true),
+    *             @OA\Property(property="message", type="string", example="User registered successfully"),
+    *             @OA\Property(property="access_token", type="string", example="1|abc123..."),
+    *             @OA\Property(property="token_type", type="string", example="Bearer")
+    *         )
+    *     ),
+    *     @OA\Response(
+    *         response=422,
+    *         description="Validation error"
+    *     )
+    * )
+    *
      * Register a new user.
      */
     public function register(Request $request)

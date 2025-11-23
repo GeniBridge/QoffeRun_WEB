@@ -1,0 +1,26 @@
+.simple-settings {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.simple-settings .card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.simple-settings .card-header {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.simple-settings .card-body {
+  padding: 1.5rem;
+}
+
+.simple-settings input[type="text"] {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-align: center;
+}

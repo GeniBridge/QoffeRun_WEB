@@ -307,4 +307,94 @@ class BarAuthController extends Controller
             'branches' => $branches->toArray(),
         ]);
     }
+
+    /**
+     * Update user profile information
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->isBarista()) {
+            return response()->json([
+                'error' => 'Accesso non autorizzato per il pannello bar.',
+            ], 403);
+        }
+
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|nullable|string|max:20',
+        ]);
+
+        $user->update($request->only(['name', 'email', 'phone']));
+
+        return response()->json([
+            'message' => 'Profilo aggiornato con successo.',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'created_at' => $user->created_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Change user password
+     */
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->isBarista()) {
+            return response()->json([
+                'error' => 'Accesso non autorizzato per il pannello bar.',
+            ], 403);
+        }
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['La password corrente non è corretta.'],
+            ]);
+        }
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        // Revoke all existing tokens except the current one
+        $currentToken = $request->user()->currentAccessToken();
+        $user->tokens()->where('id', '!=', $currentToken->id)->delete();
+
+        // Send notification email
+        try {
+            $barData = [
+                'nome' => $user->bar?->name ?? 'Bar Non Configurato',
+            ];
+
+            $changeData = BarEmailService::prepareChangeData(
+                $user->email,
+                $user->name,
+                $request->ip()
+            );
+
+            BarEmailService::sendPasswordChanged($barData, $changeData, $user->email);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send password changed notification: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Password cambiata con successo.',
+        ]);
+    }
 }

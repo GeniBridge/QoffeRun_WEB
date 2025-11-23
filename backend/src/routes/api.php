@@ -91,19 +91,24 @@ Route::prefix('v1')->group(function () {
         Route::get('/branches/{branchId}/menu', [\App\Http\Controllers\Api\CustomerOrderingController::class, 'getBranchMenu']);
         Route::get('/menu-items/{itemId}', [\App\Http\Controllers\Api\CustomerOrderingController::class, 'getMenuItem']);
         
-        // Cart management (works for both guest and authenticated users)
-        Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'getCart']);
-        Route::post('/cart/add', [\App\Http\Controllers\Api\CartController::class, 'addItem']);
-        Route::put('/cart/items/{cartItemId}', [\App\Http\Controllers\Api\CartController::class, 'updateItem']);
-        Route::delete('/cart/items/{cartItemId}', [\App\Http\Controllers\Api\CartController::class, 'removeItem']);
-        Route::delete('/cart/clear', [\App\Http\Controllers\Api\CartController::class, 'clearCart']);
+        // Cart management (guest OR authenticated). Auth optional; session logic handles persistence.
+        Route::middleware(['auth:sanctum'])->group(function () {
+            Route::get('/cart', [\App\Http\Controllers\Api\CartController::class, 'getCart']);
+            Route::post('/cart/add', [\App\Http\Controllers\Api\CartController::class, 'addItem']);
+            Route::put('/cart/items/{cartItemId}', [\App\Http\Controllers\Api\CartController::class, 'updateItem']);
+            Route::delete('/cart/items/{cartItemId}', [\App\Http\Controllers\Api\CartController::class, 'removeItem']);
+            Route::delete('/cart/clear', [\App\Http\Controllers\Api\CartController::class, 'clearCart']);
+        });
         
-        // Order management 
-        Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'create']);
-        Route::post('/orders/direct', [\App\Http\Controllers\Api\OrderController::class, 'createDirect']);
-        Route::get('/orders/{orderId}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
-        Route::post('/orders/{orderId}/capture', [\App\Http\Controllers\Api\OrderController::class, 'capturePayment']);
-        Route::post('/orders/{orderId}/cancel', [\App\Http\Controllers\Api\OrderController::class, 'cancelPayment']);
+        // Order management (authentication required now for all order flows)
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/orders', [\App\Http\Controllers\Api\OrderController::class, 'myOrders']); // Get logged-in user's orders
+            Route::post('/orders', [\App\Http\Controllers\Api\OrderController::class, 'create']);
+            Route::post('/orders/direct', [\App\Http\Controllers\Api\OrderController::class, 'createDirect']);
+            Route::get('/orders/{orderId}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
+            Route::post('/orders/{orderId}/capture', [\App\Http\Controllers\Api\OrderController::class, 'capturePayment']);
+            Route::post('/orders/{orderId}/cancel', [\App\Http\Controllers\Api\OrderController::class, 'cancelPayment']);
+        });
         
         // Customer order management (auth required)
         Route::middleware('auth:sanctum')->group(function () {
@@ -713,6 +718,89 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::apiResource('/admin/branches', BranchController::class);
         Route::post('/admin/branches/{id}/clone', [BranchController::class, 'clone']);
         Route::get('/admin/branches/{id}/stats', [BranchController::class, 'stats']);
+        
+        // Get all app customers (users with role 'customer')
+        Route::get('/admin/customers', function() {
+            $customers = \App\Models\User::where('role', 'customer')
+                ->select('id', 'name', 'email', 'phone', 'created_at', 'email_verified_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $customers
+            ]);
+        });
+        
+        // Get all transactions/orders with payment details
+        Route::get('/admin/transactions', function() {
+            $orders = \App\Models\Order::with(['user:id,name,email', 'branch:id,name', 'chain:id,name'])
+                ->select('id', 'user_id', 'branch_id', 'chain_id', 'total', 'commission_rate', 'commission_amount', 'branch_amount', 'payment_status', 'commission_status', 'stripe_payment_intent_id', 'stripe_transfer_id', 'customer_name', 'customer_email', 'customer_phone', 'created_at', 'updated_at')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($order) {
+                    // Use customer_name/customer_email from order table if available (for guest orders)
+                    // Otherwise use the user relationship (for authenticated orders)
+                    return [
+                        'id' => $order->id,
+                        'customer_name' => $order->customer_name ?: ($order->user ? $order->user->name : 'Guest'),
+                        'customer_email' => $order->customer_email ?: ($order->user ? $order->user->email : 'N/A'),
+                        'customer_phone' => $order->customer_phone ?: 'N/A',
+                        'branch_name' => $order->branch ? $order->branch->name : 'N/A',
+                        'chain_name' => $order->chain ? $order->chain->name : 'N/A',
+                        'total' => (float) $order->total,
+                        'commission_rate' => (float) $order->commission_rate,
+                        'commission_amount' => (float) $order->commission_amount,
+                        'branch_amount' => (float) $order->branch_amount,
+                        'payment_status' => $order->payment_status,
+                        'commission_status' => $order->commission_status,
+                        'stripe_payment_intent_id' => $order->stripe_payment_intent_id,
+                        'stripe_transfer_id' => $order->stripe_transfer_id,
+                        'created_at' => $order->created_at,
+                        'updated_at' => $order->updated_at,
+                    ];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ]);
+        });
+        
+        // Get admin statistics
+        Route::get('/admin/statistics', function() {
+            // Total sales (sum of all paid orders)
+            $totalSales = \App\Models\Order::where('payment_status', 'paid')->sum('total');
+            
+            // Total chains
+            $totalChains = \App\Models\Chain::count();
+            
+            // Total customers (users with role customer + unique guest customers from orders)
+            $totalRegisteredCustomers = \App\Models\User::where('role', 'customer')->count();
+            $totalGuestOrders = \App\Models\Order::whereNull('user_id')->distinct('customer_email')->count('customer_email');
+            $totalCustomers = $totalRegisteredCustomers + $totalGuestOrders;
+            
+            // Total commission (sum of all commission amounts from paid orders)
+            $totalCommission = \App\Models\Order::where('payment_status', 'paid')->sum('commission_amount');
+            
+            // Total transactions
+            $totalTransactions = \App\Models\Order::count();
+            
+            // Average commission rate
+            $avgCommissionRate = \App\Models\Order::where('payment_status', 'paid')->avg('commission_rate');
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_sales' => (float) $totalSales,
+                    'total_chains' => (int) $totalChains,
+                    'total_customers' => (int) $totalCustomers,
+                    'total_commission' => (float) $totalCommission,
+                    'total_transactions' => (int) $totalTransactions,
+                    'avg_commission_rate' => (float) $avgCommissionRate,
+                ]
+            ]);
+        });
         Route::patch('/admin/branches/{id}/status', [BranchController::class, 'updateStatus']);
         Route::apiResource('/admin/branch-managers', BranchManagerController::class);
         Route::patch('/admin/branch-managers/{id}/status', [BranchManagerController::class, 'updateStatus']);
@@ -769,12 +857,15 @@ Route::prefix('bar-panel')->group(function () {
     Route::middleware(['auth:sanctum', 'role.barista'])->group(function () {
         Route::get('/me', [BarAuthController::class, 'me']);
         Route::post('/logout', [BarAuthController::class, 'logout']);
+            Route::put('/me/update', [BarAuthController::class, 'updateProfile']);
+            Route::post('/me/change-password', [BarAuthController::class, 'changePassword']);
         
         // Branch management for authenticated users
         Route::get('/user/branches', [BarAuthController::class, 'getUserBranches']);
         
         // Branch Settings (gestione impostazioni filiali)
         Route::get('/branches/{branchId}/settings', [\App\Http\Controllers\Api\BranchSettingsController::class, 'index']);
+        Route::get('/branches/{branchId}/settings/permissions', [\App\Http\Controllers\Api\BranchSettingsController::class, 'permissions']);
         Route::put('/branches/{branchId}/settings/{key}', [\App\Http\Controllers\Api\BranchSettingsController::class, 'updateSetting']);
         Route::post('/branches/{branchId}/settings/batch', [\App\Http\Controllers\Api\BranchSettingsController::class, 'batchUpdate']);
         

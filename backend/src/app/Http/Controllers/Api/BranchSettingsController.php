@@ -192,6 +192,26 @@ class BranchSettingsController extends Controller
     }
 
     /**
+     * Get permissions for current user on this branch settings
+     */
+    public function permissions(Request $request, $branchId): JsonResponse
+    {
+        $user = Auth::user();
+        $branch = Branch::findOrFail($branchId);
+
+        $canAccess = $this->canAccessBranch($user, $branch);
+        $canManage = $this->canManageBranch($user, $branch);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'can_access' => $canAccess,
+                'can_manage' => $canManage,
+            ]
+        ], $canAccess ? 200 : 403);
+    }
+
+    /**
      * Get Stripe Connect configuration
      */
     public function getStripeConfig(Request $request, $branchId): JsonResponse
@@ -506,6 +526,23 @@ class BranchSettingsController extends Controller
             return $manager && $manager->can_manage_settings;
         }
         
+        // Allow barista/staff with explicit manage_settings permission on pivot
+        if ($user->role === 'barista' || $user->role === 'staff') {
+            $assignment = $branch->assignedUsers()
+                ->where('user_id', $user->id)
+                ->first();
+            if ($assignment && $assignment->pivot && $assignment->pivot->permissions) {
+                $permissions = is_string($assignment->pivot->permissions)
+                    ? json_decode($assignment->pivot->permissions, true)
+                    : $assignment->pivot->permissions;
+                if (is_array($permissions)) {
+                    // permission can be boolean or nested, support either shape
+                    $flag = $permissions['manage_settings'] ?? ($permissions['settings']['manage'] ?? null);
+                    return (bool)$flag === true;
+                }
+            }
+        }
+
         return false;
     }
 }

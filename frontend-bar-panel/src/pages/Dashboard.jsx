@@ -206,22 +206,43 @@ export default function Dashboard(){
             </div>
           ) : (
             list.map(o => (
-              <div className="col-md-4" key={o.id}>
-                <div className={`p-3 bg-white border rounded-4 product-card order-card ${selected===o.id? "selected":""}`} role="button" onClick={()=> handleOrderSelect(o)}>
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <div className="text-muted small">Ordine #{o.order_number || o.id}</div>
-                      <div className="text-muted small">Codice: <strong>{o.code_4digit}</strong></div>
+              <div className="col-md-6 col-lg-4" key={o.id}>
+                <div 
+                  className={`card ${selected===o.id ? "border-primary" : ""}`}
+                  role="button" 
+                  onClick={()=> handleOrderSelect(o)}
+                >
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h6 className="card-title mb-0">#{o.order_number || o.id}</h6>
+                      {statusBadge(o.status)}
                     </div>
-                    {statusBadge(o.status)}
-                  </div>
-                  <div className="text-muted small mt-1">
-                    {new Date(o.created_at).toLocaleDateString('it-IT')} {new Date(o.created_at).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'})}
-                  </div>
-                  <div className="fw-bold fs-5 mt-2">{o.customer_name || 'Cliente'}</div>
-                  <div className="text-success fw-bold mt-2">
-                    <i className="bi bi-cursor-fill me-1"></i>
-                    Clicca per gestire
+                    <p className="card-text mb-1 small">
+                      <i className="bi bi-person me-1"></i>
+                      <strong>{o.customer_name || 'Cliente'}</strong>
+                    </p>
+                    <p className="card-text mb-1 small">
+                      <i className="bi bi-clock me-1"></i>
+                      {new Date(o.created_at).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'})}
+                    </p>
+                    <p className="card-text mb-1 small">
+                      <i className="bi bi-key me-1"></i>
+                      Codice: <strong>{o.code_4digit}</strong>
+                    </p>
+                    {o.items && o.items.length > 0 && (
+                      <p className="card-text mb-2 small text-muted">
+                        <i className="bi bi-basket me-1"></i>
+                        {o.items.length} {o.items.length === 1 ? 'articolo' : 'articoli'}
+                      </p>
+                    )}
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <span className="h6 mb-0 text-success">
+                        €{parseFloat(o.total_amount || o.total || 0).toFixed(2)}
+                      </span>
+                      <button className="btn btn-sm btn-primary">
+                        Gestisci
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
