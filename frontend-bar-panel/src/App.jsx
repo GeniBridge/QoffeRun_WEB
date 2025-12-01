@@ -146,7 +146,7 @@ function AppContent() {
     );
   }
 
-  const hideRightRoutes = ['/storico-ordini', '/pagamenti', '/menu', '/qrcode', '/impostazione', '/profilo'];
+  const hideRightRoutes = ['/storico-ordini', '/pagamenti', '/menu', '/qrcode', '/impostazione', '/profilo', '/dashboard', '/'];
   const hideRight = hideRightRoutes.includes(pathname);
 
   return (

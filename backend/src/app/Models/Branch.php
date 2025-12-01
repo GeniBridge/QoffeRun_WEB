@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Carbon\Carbon;
 
 class Branch extends Model
 {
@@ -69,6 +70,103 @@ class Branch extends Model
         'staff_count' => 'integer',
         'opening_date' => 'date',
     ];
+
+    /**
+     * Computed flag: is the branch open right now based on opening_hours.
+     */
+    public function getIsOpenNowAttribute(): bool
+    {
+        $hours = $this->opening_hours;
+
+        // Fallback to sensible defaults if not configured
+        if (!$hours || !is_array($hours) || empty($hours)) {
+            $hours = [
+                'monday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'tuesday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'wednesday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'thursday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'friday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'saturday' => ['open' => '08:00', 'close' => '20:00', 'closed' => false],
+                'sunday' => ['open' => '09:00', 'close' => '19:00', 'closed' => false],
+            ];
+        }
+
+        $now = Carbon::now();
+        $dayKey = strtolower($now->format('D')); // mon..sun
+        $map = [
+            'mon' => ['mon','monday'],
+            'tue' => ['tue','tuesday'],
+            'wed' => ['wed','wednesday'],
+            'thu' => ['thu','thursday'],
+            'fri' => ['fri','friday'],
+            'sat' => ['sat','saturday'],
+            'sun' => ['sun','sunday'],
+        ];
+
+        $config = null;
+        foreach ($map[$dayKey] as $k) {
+            if (isset($hours[$k])) {
+                $config = $hours[$k];
+                break;
+            }
+        }
+
+        if (!$config) {
+            return false;
+        }
+
+        // Normalize to array of time ranges: [[open, close], ...]
+        $ranges = [];
+        // If explicitly closed
+        $closed = $config['closed'] ?? ($config['is_closed'] ?? false);
+        if (is_string($closed)) {
+            $closed = filter_var($closed, FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($closed === true) {
+            return false;
+        }
+
+        if (isset($config['open']) || isset($config['close'])) {
+            $ranges[] = [$config['open'] ?? null, $config['close'] ?? null];
+        } elseif (isset($config['periods']) && is_array($config['periods'])) {
+            foreach ($config['periods'] as $p) {
+                $ranges[] = [$p['open'] ?? null, $p['close'] ?? null];
+            }
+        } elseif (is_array($config) && array_is_list($config)) {
+            // Support direct list of ranges [{open,close}, ...]
+            foreach ($config as $p) {
+                if (is_array($p)) {
+                    $ranges[] = [$p['open'] ?? null, $p['close'] ?? null];
+                }
+            }
+        }
+
+        foreach ($ranges as [$open, $close]) {
+            if (!$open || !$close) {
+                continue;
+            }
+            try {
+                [$oh, $om] = array_map('intval', explode(':', $open));
+                [$ch, $cm] = array_map('intval', explode(':', $close));
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $openTime = (clone $now)->setTime($oh, $om, 0);
+            $closeTime = (clone $now)->setTime($ch, $cm, 0);
+
+            // Handle overnight range
+            if ($closeTime->lessThanOrEqualTo($openTime)) {
+                $closeTime->addDay();
+            }
+
+            if ($now->between($openTime, $closeTime)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /**
      * Relazioni

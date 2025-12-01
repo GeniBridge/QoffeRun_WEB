@@ -58,7 +58,10 @@ class CartController extends Controller
                 'branch' => [
                     'id' => $cart->branch->id,
                     'name' => $cart->branch->name,
-                    'chain_name' => $cart->branch->chain->name
+                    'chain_name' => $cart->branch->chain->name,
+                    'address' => $cart->branch->address,
+                    'opening_hours' => $cart->branch->opening_hours,
+                    'is_open_now' => (bool) $cart->branch->is_open_now,
                 ],
                 'items' => $cart->items->map(function ($item) {
                     return [

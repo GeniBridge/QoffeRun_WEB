@@ -26,6 +26,8 @@ class FavoriteController extends Controller
                         'id' => $favorite->branch->id,
                         'name' => $favorite->branch->name,
                         'address' => $favorite->branch->address,
+                        'opening_hours' => $favorite->branch->opening_hours,
+                        'is_open_now' => (bool) $favorite->branch->is_open_now,
                         'city' => $favorite->branch->city,
                         'status' => $favorite->branch->status,
                         'chain_name' => $favorite->branch->chain->name ?? null,

@@ -116,6 +116,11 @@ export default function Dashboard(){
         const updatedOrder = { ...selectedOrder, status: newStatus };
         setSelectedOrder(updatedOrder);
       }
+      
+      // Clear cart when order is confirmed
+      if (newStatus === 'confirmed') {
+        cart.clear();
+      }
     } catch (err) {
       setError(`Errore nell'aggiornamento: ${err.message}`)
     }
@@ -207,41 +212,45 @@ export default function Dashboard(){
           ) : (
             list.map(o => (
               <div className="col-md-6 col-lg-4" key={o.id}>
-                <div 
-                  className={`card ${selected===o.id ? "border-primary" : ""}`}
-                  role="button" 
-                  onClick={()=> handleOrderSelect(o)}
-                >
-                  <div className="card-body">
-                    <div className="d-flex justify-content-between align-items-start mb-2">
-                      <h6 className="card-title mb-0">#{o.order_number || o.id}</h6>
-                      {statusBadge(o.status)}
-                    </div>
-                    <p className="card-text mb-1 small">
-                      <i className="bi bi-person me-1"></i>
-                      <strong>{o.customer_name || 'Cliente'}</strong>
-                    </p>
-                    <p className="card-text mb-1 small">
-                      <i className="bi bi-clock me-1"></i>
-                      {new Date(o.created_at).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'})}
-                    </p>
-                    <p className="card-text mb-1 small">
-                      <i className="bi bi-key me-1"></i>
-                      Codice: <strong>{o.code_4digit}</strong>
-                    </p>
-                    {o.items && o.items.length > 0 && (
-                      <p className="card-text mb-2 small text-muted">
-                        <i className="bi bi-basket me-1"></i>
-                        {o.items.length} {o.items.length === 1 ? 'articolo' : 'articoli'}
+                <div className="position-relative">
+                  <div className="position-absolute top-0 end-0" style={{transform: 'translate(8px, -8px)', zIndex: 10}}>
+                    {statusBadge(o.status)}
+                  </div>
+                  <div 
+                    className={`card ${selected===o.id ? "border-primary" : ""}`}
+                    role="button" 
+                    onClick={()=> handleOrderSelect(o)}
+                  >
+                    <div className="card-body">
+                      <div className="mb-2">
+                        <span className="fw-semibold" style={{fontSize: '0.95rem'}}>#{o.order_number || o.id}</span>
+                      </div>
+                      <p className="card-text mb-1 small">
+                        <i className="bi bi-person me-1"></i>
+                        <strong>{o.customer_name || 'Cliente'}</strong>
                       </p>
-                    )}
-                    <div className="d-flex justify-content-between align-items-center mt-2">
-                      <span className="h6 mb-0 text-success">
-                        €{parseFloat(o.total_amount || o.total || 0).toFixed(2)}
-                      </span>
-                      <button className="btn btn-sm btn-primary">
-                        Gestisci
-                      </button>
+                      <p className="card-text mb-1 small">
+                        <i className="bi bi-clock me-1"></i>
+                        {new Date(o.created_at).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'})}
+                      </p>
+                      <p className="card-text mb-1 small">
+                        <i className="bi bi-key me-1"></i>
+                        Codice: <strong>{o.code_4digit}</strong>
+                      </p>
+                      {o.items && o.items.length > 0 && (
+                        <p className="card-text mb-2 small text-muted">
+                          <i className="bi bi-basket me-1"></i>
+                          {o.items.length} {o.items.length === 1 ? 'articolo' : 'articoli'}
+                        </p>
+                      )}
+                      <div className="d-flex justify-content-between align-items-center mt-2">
+                        <span className="h6 mb-0 text-success">
+                          €{parseFloat(o.total_amount || o.total || 0).toFixed(2)}
+                        </span>
+                        <button className="btn btn-sm btn-primary">
+                          Gestisci
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
